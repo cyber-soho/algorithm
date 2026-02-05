@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Analysis: The Interactive Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F9FAFB; color: #1F2937; }
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin: 0 auto; height: 350px; }
+        @media (min-width: 768px) { .chart-container { height: 450px; } }
+        .nav-active { border-bottom: 2px solid #4F46E5; color: #4F46E5; font-weight: 600; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .transition-all-300 { transition: all 0.3s ease-in-out; }
+    </style>
+    <!-- Chosen Palette: Warm Neutral & Professional Tech. Background: #F9FAFB (Cool Gray 50). Accents: Indigo (#4F46E5) for primary, Emerald (#10B981) for 'Best Case', Rose (#E11D48) for 'Worst Case', Amber (#F59E0B) for 'Average'. -->
+    <!-- Application Structure Plan:
+         Designed as a "Digital Learning Dashboard" with a top navigation bar dividing the content into 4 logical modules:
+         1. Fundamentals: Definitions, The "Big Three" notations, and Real-world impact. Focus on conceptual understanding.
+         2. Growth Lab: An interactive playground to visualize Big-O curves. Users can manipulate 'n' (input size) to see how different algorithms explode in complexity.
+         3. Context & Cases: Explores Best/Worst/Average cases using the Restaurant Analogy and Input Patterns. Focus on specific scenarios.
+         4. Sysadmin Scale: Applies concepts to DevOps/SRE tasks. Calculates operations for massive log/network data to prove why O(n^2) fails at scale.
+         This structure moves from abstract theory -> visual proof -> specific behaviors -> practical application, facilitating a complete learning arc.
+    -->
+    <!-- Visualization & Content Choices:
+         1. Growth Lab Chart: Line Chart (Chart.js). Goal: Compare. Shows O(1) vs O(n) vs O(n^2). Interaction: Slider changes 'n', updating the chart domain and a side-by-side data table. Justification: Visualizing the "explosion" of quadratic time is more powerful than reading numbers.
+         2. Sysadmin Simulator: Dynamic Text/Calculation. Goal: Inform/Shock. Users select "Datacenter Scale", app calculates trillion ops for O(n^2). Justification: Concrete large numbers drive home the SRE lesson.
+         3. Notation Cards: Interactive Grid. Goal: Organize. Click to flip/reveal "Driving Analogy". Justification: Connects abstract math to relatable real-world concepts.
+         4. Tables: Clean HTML tables with Tailwind. Goal: Reference. Quick lookup for cheat sheets.
+         -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-bold text-indigo-600 tracking-tight">Algorithm<span class="text-gray-900">Analysis</span></span>
+                </div>
+                <div class="hidden sm:flex space-x-8 items-center" id="nav-links">
+                    <button onclick="switchView('view-fundamentals')" class="nav-btn nav-active px-3 py-2 text-sm font-medium text-gray-900 transition-colors" data-target="view-fundamentals">Fundamentals</button>
+                    <button onclick="switchView('view-growth')" class="nav-btn px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors" data-target="view-growth">Growth Lab</button>
+                    <button onclick="switchView('view-cases')" class="nav-btn px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors" data-target="view-cases">Context & Cases</button>
+                    <button onclick="switchView('view-sysadmin')" class="nav-btn px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors" data-target="view-sysadmin">Sysadmin Scale</button>
+                </div>
+                <!-- Mobile menu button placeholder -->
+                <div class="flex items-center sm:hidden">
+                    <button onclick="toggleMobileMenu()" class="text-gray-500 hover:text-gray-900 focus:outline-none">
+                        <span class="text-2xl">≡</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden sm:hidden bg-white border-t border-gray-100">
+            <div class="pt-2 pb-4 space-y-1 px-4">
+                <button onclick="switchView('view-fundamentals')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50">Fundamentals</button>
+                <button onclick="switchView('view-growth')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50">Growth Lab</button>
+                <button onclick="switchView('view-cases')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50">Context & Cases</button>
+                <button onclick="switchView('view-sysadmin')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50">Sysadmin Scale</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- VIEW 1: FUNDAMENTALS -->
+        <section id="view-fundamentals" class="space-y-12 animate-fade-in block">
+            <div class="text-center max-w-3xl mx-auto mb-10">
+                <h1 class="text-4xl font-extrabold text-gray-900 sm:text-5xl mb-4">The "Fitness Test" for Code</h1>
+                <p class="text-xl text-gray-600 leading-relaxed">
+                    Algorithm analysis isn't just theory; it's the universal language for discussing performance. 
+                    This section breaks down the core notations used to measure how fast and efficiently code runs as your workload grows.
+                </p>
+            </div>
+
+            <!-- Impact Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 card-hover">
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-red-600 text-2xl mb-4">⚠️</div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Webpage Loads Forever</h3>
+                    <p class="text-gray-600">Root Cause: <span class="font-medium text-red-600">Inefficient Algorithm</span>. A simple loop turned into a bottleneck.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 card-hover">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 text-2xl mb-4">📱</div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Phone Freezes</h3>
+                    <p class="text-gray-600">Root Cause: <span class="font-medium text-orange-600">Poor Scaling</span>. The photo library app couldn't handle 10,000 images.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 card-hover">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600 text-2xl mb-4">⚡</div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Instant Search</h3>
+                    <p class="text-gray-600">Root Cause: <span class="font-medium text-green-600">Optimized Algorithms</span>. Google returns results in milliseconds regardless of index size.</p>
+                </div>
+            </div>
+
+            <!-- The Big Three Interactive -->
+            <div class="bg-indigo-50 rounded-2xl p-8 border border-indigo-100">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Meet the Big Three Notations</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <!-- Big O -->
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden group cursor-pointer transition-all-300" onclick="toggleNotationDetail('big-o')">
+                        <div class="bg-rose-50 p-4 border-b border-rose-100 flex justify-between items-center">
+                            <h3 class="font-bold text-rose-700 text-xl">Big-O (Upper Bound)</h3>
+                            <span class="text-2xl">📉</span>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-900 font-medium mb-2">The Worst Case Ceiling</p>
+                            <p class="text-gray-600 text-sm mb-4">"NEVER slower than this."</p>
+                            <div class="bg-gray-50 p-3 rounded text-sm text-gray-700 border-l-4 border-rose-500">
+                                <strong>Driving Analogy:</strong><br>
+                                "What's the absolute longest this drive could take?" (Traffic + Accidents + Rain)
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Big Theta -->
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden group cursor-pointer transition-all-300" onclick="toggleNotationDetail('big-theta')">
+                        <div class="bg-amber-50 p-4 border-b border-amber-100 flex justify-between items-center">
+                            <h3 class="font-bold text-amber-700 text-xl">Big-Θ (Tight Bound)</h3>
+                            <span class="text-2xl">⚖️</span>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-900 font-medium mb-2">The Typical Average</p>
+                            <p class="text-gray-600 text-sm mb-4">"TYPICALLY performs at this level."</p>
+                            <div class="bg-gray-50 p-3 rounded text-sm text-gray-700 border-l-4 border-amber-500">
+                                <strong>Driving Analogy:</strong><br>
+                                "How long does this commute realistically take most days?"
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Big Omega -->
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden group cursor-pointer transition-all-300" onclick="toggleNotationDetail('big-omega')">
+                        <div class="bg-emerald-50 p-4 border-b border-emerald-100 flex justify-between items-center">
+                            <h3 class="font-bold text-emerald-700 text-xl">Big-Ω (Lower Bound)</h3>
+                            <span class="text-2xl">🚀</span>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-900 font-medium mb-2">The Best Case Floor</p>
+                            <p class="text-gray-600 text-sm mb-4">"NEVER faster than this."</p>
+                            <div class="bg-gray-50 p-3 rounded text-sm text-gray-700 border-l-4 border-emerald-500">
+                                <strong>Driving Analogy:</strong><br>
+                                "What's the fastest I could arrive?" (All green lights, 3 AM)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Takeaway Box -->
+            <div class="bg-gray-900 text-white p-6 rounded-lg shadow-lg mx-auto max-w-4xl">
+                <h4 class="text-indigo-400 font-bold uppercase tracking-wider text-sm mb-2">Key Takeaway</h4>
+                <p class="text-lg">The notation describes <strong>HOW PERFORMANCE SCALES</strong> as input size (<span class="font-mono text-yellow-400">n</span>) grows — not the exact time in seconds.</p>
+            </div>
+        </section>
+
+        <!-- VIEW 2: GROWTH LAB -->
+        <section id="view-growth" class="space-y-8 hidden animate-fade-in">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-900">The Growth Lab</h2>
+                <p class="mt-2 text-gray-600">
+                    Interact with the chart to see why "Big-O" matters. Adjust the input size (<span class="font-mono bg-gray-200 px-1 rounded">n</span>) to witness how different algorithms scale. Notice how <span class="text-red-600 font-bold">O(n²)</span> becomes unusable very quickly.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Controls & Data -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <label for="input-n" class="block text-sm font-medium text-gray-700 mb-2">Input Size (n): <span id="n-display" class="font-bold text-indigo-600 text-lg">10</span> items</label>
+                        <input type="range" id="input-n" min="1" max="100" value="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                        <div class="flex justify-between text-xs text-gray-500 mt-2">
+                            <span>1</span>
+                            <span>50</span>
+                            <span>100</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Complexity</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Operations</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                                <tr>
+                                    <td class="px-4 py-3 font-medium text-green-600">O(1) Constant</td>
+                                    <td class="px-4 py-3 text-right font-mono">1</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 font-medium text-blue-600">O(log n) Log</td>
+                                    <td class="px-4 py-3 text-right font-mono" id="val-log">3</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 font-medium text-indigo-600">O(n) Linear</td>
+                                    <td class="px-4 py-3 text-right font-mono" id="val-lin">10</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 font-medium text-orange-600">O(n log n)</td>
+                                    <td class="px-4 py-3 text-right font-mono" id="val-nlog">33</td>
+                                </tr>
+                                <tr class="bg-red-50">
+                                    <td class="px-4 py-3 font-bold text-red-600">O(n²) Quadratic</td>
+                                    <td class="px-4 py-3 text-right font-bold text-red-600 font-mono" id="val-sq">100</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
+                        <strong>Visual Tip:</strong> See how the red line (Quadratic) shoots up? That's why we avoid nested loops on large data!
+                    </div>
+                </div>
+
+                <!-- Chart Container -->
+                <div class="lg:col-span-2 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                    <div class="chart-container">
+                        <canvas id="growthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                <div class="p-4 bg-white rounded shadow-sm text-center">
+                    <div class="text-green-500 font-bold text-lg">O(1)</div>
+                    <div class="text-xs text-gray-500">Light Switch</div>
+                </div>
+                <div class="p-4 bg-white rounded shadow-sm text-center">
+                    <div class="text-blue-500 font-bold text-lg">O(log n)</div>
+                    <div class="text-xs text-gray-500">Phonebook Search</div>
+                </div>
+                <div class="p-4 bg-white rounded shadow-sm text-center">
+                    <div class="text-indigo-500 font-bold text-lg">O(n)</div>
+                    <div class="text-xs text-gray-500">Reading a Book</div>
+                </div>
+                <div class="p-4 bg-red-50 rounded shadow-sm text-center border border-red-100">
+                    <div class="text-red-500 font-bold text-lg">O(n²)</div>
+                    <div class="text-xs text-gray-500">Checking Duplicates</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: CONTEXT & CASES -->
+        <section id="view-cases" class="space-y-12 hidden animate-fade-in">
+            <div class="text-center max-w-3xl mx-auto">
+                <h2 class="text-3xl font-bold text-gray-900">Understanding Case Behaviors</h2>
+                <p class="mt-4 text-gray-600">
+                    An algorithm isn't just fast or slow. Its performance depends on the <strong>input</strong>. 
+                    Input determines which personality (Best, Worst, or Expected) shows up.
+                </p>
+            </div>
+
+            <!-- Restaurant Analogy Interactive -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <h3 class="font-bold text-lg text-gray-800">The Restaurant Analogy: Finding a Reservation</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200">
+                    <div class="p-6 hover:bg-green-50 transition-colors cursor-default">
+                        <div class="flex items-center space-x-2 mb-4">
+                            <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded uppercase">Best Case</span>
+                            <span class="text-gray-400 font-mono">Ω(1)</span>
+                        </div>
+                        <p class="text-gray-900 font-medium mb-2">Customer is at the entrance.</p>
+                        <p class="text-gray-500 text-sm">Instant find. You didn't even have to look!</p>
+                    </div>
+                    <div class="p-6 hover:bg-amber-50 transition-colors cursor-default">
+                        <div class="flex items-center space-x-2 mb-4">
+                            <span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded uppercase">Expected</span>
+                            <span class="text-gray-400 font-mono">Θ(n/2)</span>
+                        </div>
+                        <p class="text-gray-900 font-medium mb-2">Customer is in the middle.</p>
+                        <p class="text-gray-500 text-sm">You check about half the tables to find them.</p>
+                    </div>
+                    <div class="p-6 hover:bg-red-50 transition-colors cursor-default">
+                        <div class="flex items-center space-x-2 mb-4">
+                            <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded uppercase">Worst Case</span>
+                            <span class="text-gray-400 font-mono">O(n)</span>
+                        </div>
+                        <p class="text-gray-900 font-medium mb-2">Customer is in the back corner.</p>
+                        <p class="text-gray-500 text-sm">You checked EVERY single table. Maximum work.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Effects Simulator -->
+            <div class="bg-indigo-900 text-white rounded-2xl p-8 shadow-xl">
+                <h3 class="text-xl font-bold mb-6">How Data Shape Affects Speed</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <p class="mb-4 text-indigo-200">Select an Algorithm & Input Type:</p>
+                        <div class="space-y-4">
+                            <select id="algo-select" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="binary">Binary Search</option>
+                                <option value="quick">Quicksort (Standard)</option>
+                                <option value="linear">Linear Search</option>
+                            </select>
+                            
+                            <div class="flex space-x-4">
+                                <button onclick="simulateCase('sorted')" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-colors">Sorted Input</button>
+                                <button onclick="simulateCase('random')" class="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors">Random Input</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="simulation-result" class="bg-gray-800 rounded-lg p-6 flex flex-col justify-center border border-gray-700">
+                        <div class="text-center">
+                            <span class="text-4xl mb-2 block">👈</span>
+                            <p class="text-gray-400">Select options to see the result</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <div class="flex">
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-700">
+                            <strong>Practical Decision Framework:</strong> Design for the Worst Case (Capacity Planning), but optimize for the Expected Case (User Experience).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 4: SYSADMIN SCALE -->
+        <section id="view-sysadmin" class="space-y-12 hidden animate-fade-in">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">Sysadmin Scale Simulator</h2>
+                <p class="text-gray-600 mb-8">
+                    Why should SREs care about Big-O? Because "works on my laptop" (n=100) often crashes in production (n=1,000,000).
+                    Use this tool to compare approaches for processing network logs.
+                </p>
+
+                <!-- Scale Calculator -->
+                <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+                    <div class="mb-8">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">System Load (Packets per Second)</label>
+                        <input type="range" id="scale-slider" min="1000" max="1000000" step="1000" value="1000" class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600">
+                        <div class="flex justify-between mt-2 text-sm text-gray-500 font-mono">
+                            <span>Small Office (1k)</span>
+                            <span class="text-red-600 font-bold" id="scale-value-display">1,000 Packets</span>
+                            <span>Datacenter (1M)</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Efficient Approach -->
+                        <div class="bg-green-50 p-6 rounded-lg border border-green-200">
+                            <h3 class="text-green-800 font-bold mb-2">Efficient: Indexed Search (Hash/Set)</h3>
+                            <div class="text-xs text-green-600 mb-4 font-mono uppercase">Complexity: O(n) or O(1) Lookup</div>
+                            <div class="flex justify-between items-end">
+                                <div>
+                                    <span class="block text-sm text-gray-500">Operations Needed</span>
+                                    <span class="text-2xl font-bold text-gray-900" id="ops-efficient">1,000</span>
+                                </div>
+                                <div class="text-green-600 text-3xl">✅</div>
+                            </div>
+                            <p class="mt-4 text-sm text-gray-600">System handles this easily. CPU usage remains low.</p>
+                        </div>
+
+                        <!-- Inefficient Approach -->
+                        <div class="bg-red-50 p-6 rounded-lg border border-red-200 relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 bg-red-200 w-20 h-20 rounded-full opacity-50"></div>
+                            <h3 class="text-red-800 font-bold mb-2">Inefficient: Nested Loops</h3>
+                            <div class="text-xs text-red-600 mb-4 font-mono uppercase">Complexity: O(n²)</div>
+                            <div>
+                                <span class="block text-sm text-gray-500">Operations Needed</span>
+                                <span class="text-2xl font-bold text-gray-900 break-all" id="ops-inefficient">1,000,000</span>
+                            </div>
+                            <p class="mt-4 text-sm text-gray-600">
+                                <span id="crash-warning" class="hidden font-bold text-red-700 animate-pulse">⚠️ SYSTEM CRASH IMMINENT</span>
+                                <span id="normal-status">Manageable for now...</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tools Table -->
+                <div class="mt-12">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">The Sysadmin Toolbox</h3>
+                    <div class="overflow-x-auto border rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tool/Task</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Approach</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Efficiency</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                                <tr>
+                                    <td class="px-6 py-4 font-mono font-bold">grep "error" file.log</td>
+                                    <td class="px-6 py-4">Reads file once (Pattern Matching)</td>
+                                    <td class="px-6 py-4"><span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold">O(n) - Good</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-mono font-bold">Find duplicate packets</td>
+                                    <td class="px-6 py-4">Compare every packet to every other</td>
+                                    <td class="px-6 py-4"><span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold">O(n²) - Dangerous</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-mono font-bold">Binary Search Log</td>
+                                    <td class="px-6 py-4">Indexed/Sorted timestamp search</td>
+                                    <td class="px-6 py-4"><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">O(log n) - Fast</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Golden Rules -->
+                <div class="mt-12 bg-white rounded-xl p-8 border-t-4 border-indigo-500 shadow-sm">
+                    <h3 class="text-xl font-bold mb-4">Golden Rules of Performance</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 text-indigo-500 font-bold">1.</span>
+                            <span class="ml-2 text-gray-700"><strong>Know your n:</strong> The same code can succeed or fail depending on data size.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 text-indigo-500 font-bold">2.</span>
+                            <span class="ml-2 text-gray-700"><strong>Choose specialized tools:</strong> Generic solutions often scale poorly.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 text-indigo-500 font-bold">3.</span>
+                            <span class="ml-2 text-gray-700"><strong>Think in growth:</strong> Ask "What happens if data increases 1000x?"</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-gray-500 text-sm">© 2026, Cyber.SoHo. Educational | Module 1: Algorithm Analysis</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- Navigation Logic ---
+        function switchView(viewId) {
+            // Hide all sections
+            const sections = ['view-fundamentals', 'view-growth', 'view-cases', 'view-sysadmin'];
+            sections.forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            
+            // Show target
+            const target = document.getElementById(viewId);
+            target.classList.remove('hidden');
+            
+            // Update Nav State
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.dataset.target === viewId) {
+                    btn.classList.add('nav-active', 'text-gray-900');
+                    btn.classList.remove('text-gray-500');
+                } else {
+                    btn.classList.remove('nav-active', 'text-gray-900');
+                    btn.classList.add('text-gray-500');
+                }
+            });
+
+            // If switching to Growth Lab, resize chart to be safe
+            if(viewId === 'view-growth' && window.growthChartInstance) {
+                window.growthChartInstance.resize();
+            }
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // --- View 1: Fundamentals Interactivity ---
+        function toggleNotationDetail(type) {
+            // Simple alert/modal replacement using visual feedback in console or basic expansion
+            // For this SPA, the cards are already expanded with info. 
+            // Let's add a visual "pulse" to indicate interaction if needed, but the content is static for clarity.
+            // (Function placeholder for potential future modal logic)
+        }
+
+        // --- View 2: Growth Lab Chart.js ---
+        let growthChartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            
+            // Initial Data (n=10)
+            const initialN = 10;
+            const labels = Array.from({length: initialN}, (_, i) => i + 1);
+            
+            const dataO1 = Array(initialN).fill(1);
+            const dataLog = labels.map(x => Math.log2(x));
+            const dataN = labels.map(x => x);
+            const dataNsq = labels.map(x => x * x);
+
+            growthChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'O(1) Constant',
+                            data: dataO1,
+                            borderColor: '#10B981', // Green
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'O(log n) Logarithmic',
+                            data: dataLog,
+                            borderColor: '#3B82F6', // Blue
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'O(n) Linear',
+                            data: dataN,
+                            borderColor: '#4F46E5', // Indigo
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'O(n²) Quadratic',
+                            data: dataNsq,
+                            borderColor: '#EF4444', // Red
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Operations (Time)' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Input Size (n)' }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + Math.round(context.raw);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Slider Logic
+            const slider = document.getElementById('input-n');
+            const display = document.getElementById('n-display');
+            const valLog = document.getElementById('val-log');
+            const valLin = document.getElementById('val-lin');
+            const valNLog = document.getElementById('val-nlog');
+            const valSq = document.getElementById('val-sq');
+
+            slider.addEventListener('input', (e) => {
+                const n = parseInt(e.target.value);
+                display.innerText = n;
+                
+                // Update Table
+                valLog.innerText = Math.round(Math.log2(n));
+                valLin.innerText = n;
+                valNLog.innerText = Math.round(n * Math.log2(n));
+                valSq.innerText = (n * n).toLocaleString();
+
+                // Update Chart Data
+                const newLabels = Array.from({length: n}, (_, i) => i + 1);
+                growthChartInstance.data.labels = newLabels;
+                growthChartInstance.data.datasets[0].data = Array(n).fill(1);
+                growthChartInstance.data.datasets[1].data = newLabels.map(x => Math.log2(x));
+                growthChartInstance.data.datasets[2].data = newLabels.map(x => x);
+                growthChartInstance.data.datasets[3].data = newLabels.map(x => x * x);
+                growthChartInstance.update();
+            });
+        });
+
+        // --- View 3: Case Simulator ---
+        function simulateCase(inputType) {
+            const algo = document.getElementById('algo-select').value;
+            const resultBox = document.getElementById('simulation-result');
+            
+            let title = "";
+            let description = "";
+            let colorClass = "text-gray-900";
+            let icon = "";
+
+            if (algo === 'binary') {
+                if (inputType === 'sorted') {
+                    title = "Best Case Scenario! ✅";
+                    description = "Binary Search LOVES sorted data. It can cut the problem in half instantly. Performance: O(log n).";
+                    colorClass = "text-green-400";
+                    icon = "⚡";
+                } else {
+                    title = "Impossible / Worst Case ❌";
+                    description = "Binary Search CANNOT work on unsorted data. You must sort it first (O(n log n)) or use linear search.";
+                    colorClass = "text-red-400";
+                    icon = "🛑";
+                }
+            } else if (algo === 'quick') {
+                if (inputType === 'sorted') {
+                    title = "Worst Case Scenario (Standard Pivot) ⚠️";
+                    description = "Ironically, sorted data triggers the worst case for standard Quicksort (pivot selection issues). Performance degrades to O(n²).";
+                    colorClass = "text-red-400";
+                    icon = "🐌";
+                } else {
+                    title = "Expected Case ✅";
+                    description = "Random data is ideal for Quicksort. It partitions well. Performance: O(n log n).";
+                    colorClass = "text-green-400";
+                    icon = "👍";
+                }
+            } else if (algo === 'linear') {
+                title = "Consistent / No Change 😐";
+                description = "Linear search doesn't care if data is sorted. It just checks one by one. Performance: O(n).";
+                colorClass = "text-blue-300";
+                icon = "😐";
+            }
+
+            resultBox.innerHTML = `
+                <div class="text-center animate-fade-in">
+                    <div class="text-5xl mb-4">${icon}</div>
+                    <h4 class="text-xl font-bold ${colorClass} mb-2">${title}</h4>
+                    <p class="text-gray-300 leading-relaxed">${description}</p>
+                </div>
+            `;
+        }
+
+        // --- View 4: Sysadmin Scale ---
+        const scaleSlider = document.getElementById('scale-slider');
+        const scaleDisplay = document.getElementById('scale-value-display');
+        const opsEff = document.getElementById('ops-efficient');
+        const opsIneff = document.getElementById('ops-inefficient');
+        const warning = document.getElementById('crash-warning');
+        const normal = document.getElementById('normal-status');
+
+        scaleSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            scaleDisplay.innerText = val.toLocaleString() + " Packets";
+
+            // Efficient: O(n)
+            opsEff.innerText = val.toLocaleString();
+
+            // Inefficient: O(n^2)
+            const squared = val * val;
+            
+            // Format large numbers
+            if(squared > 1000000000000) {
+                opsIneff.innerText = (squared / 1000000000000).toFixed(1) + " Trillion";
+            } else if (squared > 1000000000) {
+                opsIneff.innerText = (squared / 1000000000).toFixed(1) + " Billion";
+            } else {
+                opsIneff.innerText = squared.toLocaleString();
+            }
+
+            // Warning Logic
+            if(val > 10000) {
+                warning.classList.remove('hidden');
+                normal.classList.add('hidden');
+                opsIneff.classList.add('text-red-600');
+            } else {
+                warning.classList.add('hidden');
+                normal.classList.remove('hidden');
+                opsIneff.classList.remove('text-red-600');
+            }
+        });
+
+    </script>
+</body>
+</html>
+
+

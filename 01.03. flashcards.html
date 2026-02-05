@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Analysis Flashcards</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .perspective {
+            perspective: 1000px;
+        }
+        .preserve-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        .flipped {
+            transform: rotateY(180deg);
+        }
+        .card-container {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <div class="max-w-2xl w-full flex flex-col gap-6">
+        <!-- Header -->
+        <header class="text-center space-y-2">
+            <h1 class="text-3xl font-bold text-indigo-700">Algorithm Analysis</h1>
+            <p class="text-slate-500">Big-O, Complexity Classes & Case Behaviors</p>
+            <div class="w-full bg-slate-200 h-2 rounded-full mt-4 overflow-hidden">
+                <div id="progress-bar" class="bg-indigo-500 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="counter" class="text-sm font-medium text-slate-600 mt-1">Card 1 of 25</p>
+        </header>
+
+        <!-- Flashcard Area -->
+        <div class="perspective w-full h-80 md:h-96 cursor-pointer" onclick="flipCard()">
+            <div id="card" class="card-container preserve-3d relative w-full h-full shadow-xl rounded-2xl">
+                <!-- Front -->
+                <div class="backface-hidden absolute inset-0 bg-white border-2 border-indigo-100 rounded-2xl flex flex-col items-center justify-center p-8 text-center">
+                    <span class="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-4">Concept</span>
+                    <h2 id="card-front" class="text-2xl md:text-3xl font-semibold leading-tight">Algorithm Analysis</h2>
+                </div>
+                <!-- Back -->
+                <div class="backface-hidden rotate-y-180 absolute inset-0 bg-indigo-600 text-white rounded-2xl flex flex-col items-center justify-center p-8 text-center overflow-y-auto">
+                    <span class="text-xs font-bold uppercase tracking-widest opacity-70 mb-4">Explanation</span>
+                    <p id="card-back" class="text-lg md:text-xl leading-relaxed">The "fitness test" for computer programs that measures how fast and efficiently code runs as workload grows.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center justify-between gap-4">
+            <button onclick="prevCard()" class="flex-1 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold py-3 px-6 rounded-xl transition-colors shadow-sm">
+                Previous
+            </button>
+            <button onclick="flipCard()" class="flex-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-3 px-6 rounded-xl transition-colors shadow-sm">
+                Flip
+            </button>
+            <button onclick="nextCard()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-md">
+                Next
+            </button>
+        </div>
+
+        <!-- Instructions -->
+        <footer class="text-center text-slate-400 text-sm">
+            Tip: Click the card or press Space to flip. Use Arrow keys to navigate.
+        </footer>
+    </div>
+
+    <script>
+        const flashcards = [
+            { front: "Algorithm Analysis", back: "The \"fitness test\" for computer programs that measures how fast and efficiently code runs as workload grows." },
+            { front: "Big-O Notation ($O$)", back: "Upper Bound: Describes the **worst-case** ceiling of an algorithm's performance (maximum time it could take)." },
+            { front: "Big-Omega Notation ($\\Omega$)", back: "Lower Bound: Describes the **best-case** floor or minimum time required to complete a task." },
+            { front: "Big-Theta Notation ($\\Theta$)", back: "Tight Bound: Describes performance when the best and worst cases grow at the same rate (typical/average performance)." },
+            { front: "What does '$n$' represent?", back: "The size of the input (e.g., number of items in a list, size of a file)." },
+            { front: "Constant Time Complexity", back: "$O(1)$: The operation takes the same amount of time regardless of input size." },
+            { front: "Linear Time Complexity", back: "$O(n)$: The time taken doubles when the input size doubles." },
+            { front: "Quadratic Time Complexity", back: "$O(n^2)$: Performance grows explosively; usually impractical for large inputs." },
+            { front: "Logarithmic Time Complexity", back: "$O(\\log n)$: Grows very slowly; highly efficient (e.g., finding a word in a dictionary)." },
+            { front: "Best Case Scenario", back: "Ideal input resulting in minimum work (e.g., finding an item at the very first index)." },
+            { front: "Worst Case Scenario", back: "Problematic input resulting in maximum work; systems must be designed to handle this." },
+            { front: "Expected Case Scenario", back: "Typical input resulting in average work; algorithms should be optimized for this." },
+            { front: "Analogy for $O(1)$", back: "Flipping a light switch (takes the same time regardless of room size)." },
+            { front: "Analogy for $O(n)$", back: "Reading a book page by page." },
+            { front: "Binary Search Worst-Case", back: "$O(\\log n)$" },
+            { front: "Linear Search Worst-Case", back: "$O(n)$" },
+            { front: "Hash Table Lookup (Average)", back: "$\\Theta(1)$" },
+            { front: "Bubble Sort Complexity (Average)", back: "$\\Theta(n^2)$" },
+            { front: "Merge Sort Complexity (Average)", back: "$\\Theta(n \\log n)$" },
+            { front: "Memory Trick: Big-O", back: "\"Oh no, this could get bad!\" (Upper/Worst case)" },
+            { front: "Memory Trick: Big-Omega", back: "\"Oh nice, this is the minimum!\" (Lower/Best case)" },
+            { front: "Design Rule", back: "Design for worst case, optimize for expected case." },
+            { front: "Why use `grep` or `awk`?", back: "Optimized for specific tasks (often $O(n)$ or single-pass) compared to generic code." },
+            { front: "Impact of 1M packets on $O(n^2)$", back: "1 trillion operations (catastrophic performance)." },
+            { front: "Which notation is \"NEVER slower than this\"?", back: "Big-O (Upper Bound)" }
+        ];
+
+        let currentIndex = 0;
+
+        function updateCard() {
+            const card = document.getElementById('card');
+            const front = document.getElementById('card-front');
+            const back = document.getElementById('card-back');
+            const counter = document.getElementById('counter');
+            const progress = document.getElementById('progress-bar');
+
+            // Reset flip before changing content
+            card.classList.remove('flipped');
+
+            setTimeout(() => {
+                front.innerText = flashcards[currentIndex].front;
+                back.innerText = flashcards[currentIndex].back;
+                counter.innerText = `Card ${currentIndex + 1} of ${flashcards.length}`;
+                progress.style.width = `${((currentIndex + 1) / flashcards.length) * 100}%`;
+            }, 150);
+        }
+
+        function flipCard() {
+            document.getElementById('card').classList.toggle('flipped');
+        }
+
+        function nextCard() {
+            currentIndex = (currentIndex + 1) % flashcards.length;
+            updateCard();
+        }
+
+        function prevCard() {
+            currentIndex = (currentIndex - 1 + flashcards.length) % flashcards.length;
+            updateCard();
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') flipCard();
+            if (e.code === 'ArrowRight') nextCard();
+            if (e.code === 'ArrowLeft') prevCard();
+        });
+
+        // Initial load
+        window.onload = updateCard;
+    </script>
+</body>
+</html>
+
+
+
+

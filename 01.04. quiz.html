@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Analysis & Complexity Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .option-btn:hover:not(:disabled) {
+            transform: translateX(4px);
+            background-color: #f1f5f9;
+        }
+
+        .correct {
+            background-color: #dcfce7 !important;
+            border-color: #22c55e !important;
+            color: #166534 !important;
+        }
+
+        .incorrect {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+            color: #991b1b !important;
+        }
+
+        .progress-bar {
+            transition: width 0.4s ease-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="quiz-container" class="max-w-2xl w-full">
+        <!-- Header -->
+        <div class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">Complexity & Analysis</h1>
+            <p class="text-slate-500">Master the Big Three Notations</p>
+        </div>
+
+        <!-- Progress -->
+        <div class="mb-6">
+            <div class="flex justify-between text-sm font-medium text-slate-500 mb-2">
+                <span id="progress-text">Question 1 of 10</span>
+                <span id="score-text">Score: 0%</span>
+            </div>
+            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div id="progress-bar" class="progress-bar h-full bg-indigo-600 w-0"></div>
+            </div>
+        </div>
+
+        <!-- Question Card -->
+        <div class="glass-card rounded-2xl p-6 shadow-xl shadow-slate-200/50">
+            <div id="question-area">
+                <h2 id="question-text" class="text-xl font-semibold text-slate-800 mb-6 leading-relaxed">
+                    Loading question...
+                </h2>
+                
+                <div id="options-grid" class="space-y-3">
+                    <!-- Options injected here -->
+                </div>
+
+                <!-- Feedback Area -->
+                <div id="feedback-container" class="hidden mt-6 pt-6 border-t border-slate-100">
+                    <div id="rationale-box" class="p-4 rounded-xl text-sm leading-relaxed mb-4">
+                        <!-- Rationale text -->
+                    </div>
+                    <button id="next-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors">
+                        Next Question
+                    </button>
+                </div>
+
+                <!-- Hint Toggle -->
+                <div class="mt-6 text-center">
+                    <button id="hint-btn" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium underline decoration-2 underline-offset-4">
+                        Need a hint?
+                    </button>
+                    <p id="hint-text" class="hidden mt-2 text-sm text-slate-500 italic"></p>
+                </div>
+            </div>
+
+            <!-- Results Area (Hidden by default) -->
+            <div id="results-area" class="hidden text-center py-8">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-indigo-100 rounded-full mb-4">
+                    <svg class="w-10 h-10 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">Quiz Complete!</h2>
+                <p id="final-score" class="text-lg text-slate-600 mb-8">You scored 0/10</p>
+                <button onclick="location.reload()" class="bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 px-8 rounded-xl transition-all">
+                    Retry Quiz
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = {
+            "questions": [
+                {
+                    "question": "Which Big-O notation represents an algorithm that grows explosively and becomes impractical for large inputs?",
+                    "hint": "Think about the curve that shoots up the fastest on a graph as 'n' increases, like nested loops.",
+                    "answerOptions": [
+                        { "text": "O(log n)", "rationale": "Logarithmic complexity grows very slowly and is highly efficient for large inputs.", "isCorrect": false },
+                        { "text": "O(n)", "rationale": "Linear complexity grows proportionally with input size, which is generally acceptable.", "isCorrect": false },
+                        { "text": "O(1)", "rationale": "Constant time means the algorithm takes the same amount of time regardless of input size.", "isCorrect": false },
+                        { "text": "O(n²)", "rationale": "Quadratic complexity means operations increase with the square of the input, leading to explosive growth.", "isCorrect": true }
+                    ]
+                },
+                {
+                    "question": "What does Big-Ω (Omega) notation specifically describe?",
+                    "hint": "If Big-O is the 'ceiling', what part of the room corresponds to the minimum possible time?",
+                    "answerOptions": [
+                        { "text": "The worst-case scenario or upper bound.", "rationale": "The upper bound or worst-case ceiling is described by Big-O notation.", "isCorrect": false },
+                        { "text": "The typical or average case behavior.", "rationale": "The typical or average behavior is described by Big-Θ (Theta) notation.", "isCorrect": false },
+                        { "text": "The best-case scenario or lower bound.", "rationale": "Big-Ω defines the theoretical floor, meaning the algorithm can never be faster than this.", "isCorrect": true },
+                        { "text": "The exact time in seconds an algorithm takes.", "rationale": "Complexity notations describe scaling relative to input size, not wall-clock time.", "isCorrect": false }
+                    ]
+                },
+                {
+                    "question": "In the context of the 'Restaurant Analogy', finding a customer immediately at the entrance represents which case?",
+                    "hint": "Consider the scenario requiring the absolute minimum amount of effort to achieve the goal.",
+                    "answerOptions": [
+                        { "text": "Worst Case", "rationale": "The worst case would be checking every single table before finding the customer.", "isCorrect": false },
+                        { "text": "Best Case", "rationale": "Finding the target instantly with minimum work is the definition of the best-case scenario.", "isCorrect": true },
+                        { "text": "Expected Case", "rationale": "The expected case involves checking an average number of tables (e.g., half).", "isCorrect": false },
+                        { "text": "Average Case", "rationale": "Average case is synonymous with expected case, implying typical effort, not instant success.", "isCorrect": false }
+                    ]
+                },
+                {
+                    "question": "Why is O(n²) considered dangerous for system administrators managing large-scale data?",
+                    "hint": "Compare processing 1,000 items versus 1,000,000 items and think about the 'explosion' in operations.",
+                    "answerOptions": [
+                        { "text": "It requires too much memory for small files.", "rationale": "While memory can be an issue, the primary danger of O(n²) is processing time, not just memory.", "isCorrect": false },
+                        { "text": "It scales poorly, turning manageable tasks into jobs that take trillions of operations.", "rationale": "As input size grows (e.g., from 1k to 1M), O(n²) operations increase quadratically, causing system hangs.", "isCorrect": true },
+                        { "text": "It is too fast and causes race conditions.", "rationale": "O(n²) is characterized by being slow and inefficient at scale, not by being too fast.", "isCorrect": false },
+                        { "text": "It cannot handle sorted data.", "rationale": "O(n²) algorithms can handle sorted data, though they may still be inefficient depending on the specific algorithm.", "isCorrect": false }
+                    ]
+                },
+                {
+                    "question": "Which data structure provides O(1) complexity for lookups, making it efficient for detecting duplicates?",
+                    "hint": "This structure acts like a dictionary where you can jump directly to the definition without turning pages.",
+                    "answerOptions": [
+                        { "text": "Linked List", "rationale": "Lookups in a linked list require traversing the list, which is O(n).", "isCorrect": false },
+                        { "text": "Unsorted Array", "rationale": "Finding an item in an unsorted array requires scanning the elements, which is O(n).", "isCorrect": false },
+                        { "text": "Hash Table", "rationale": "Hash tables use a key to directly access the value, providing constant time complexity on average.", "isCorrect": true },
+                        { "text": "Binary Tree", "rationale": "Lookups in a balanced binary tree are O(log n), which is fast but not constant O(1).", "isCorrect": false }
+                    ]
+                },
+                {
+                    "question": "For a binary search algorithm, what type of input triggers the 'Best Case' scenario?",
+                    "hint": "Binary search starts checking at a specific position; finding the item there immediately is ideal.",
+                    "answerOptions": [
+                        { "text": "Randomly ordered data", "rationale": "Binary search requires order to function correctly; random data would not work or trigger a best case.", "isCorrect": false },
+                        { "text": "Reverse sorted data", "rationale": "Reverse sorted data allows binary search to work but doesn't inherently guarantee the target is found instantly.", "isCorrect": false },
+                        { "text": "The target value is at the middle of the array", "rationale": "If the target is exactly where the algorithm checks first (the middle), it finishes in O(1) time.", "isCorrect": true },
+                        { "text": "The target value is at the end of the array", "rationale": "Finding an item at the end would require multiple steps of division, not the single step of the best case.", "isCorrect": false }
+                    ]
+                },
+                {
+                    "question": "If an algorithm has a complexity of O(log n), how does the time change if the input size doubles?",
+                    "hint": "Think about looking up a word in a dictionary; adding twice as many pages only adds one more 'split' to the search.",
+                    "answerOptions": [
+                        { "text": "The time doubles.", "rationale": "Time doubling when input doubles describes linear complexity, O(n).", "isCorrect": false },
+                        { "text": "The time increases by a constant, small amount.", "rationale": "Logarithmic growth is very slow; doubling input only adds a single 'step' or unit of time.", "isCorrect": true },
+                        { "text": "The time quadruples.", "rationale": "Time quadrupling when input doubles describes quadratic complexity, O(n²).", "isCorrect": false },
+                        { "text": "The time stays exactly the same.", "rationale": "Time staying exactly the same regardless of input size describes constant complexity, O(1).", "isCorrect": false }
+                    ]
+                },
+                {
+                    "question": "Which of the following scenarios best represents Big-Θ (Theta) notation?",
+                    "hint": "This notation is the 'tight' bound that describes what you should realistically plan for day-to-day.",
+                    "answerOptions": [
+                        { "text": "The absolute fastest a network packet could ever arrive.", "rationale": "This describes the best-case floor, which corresponds to Big-Ω.", "isCorrect": false },
+                        { "text": "The theoretical maximum time a backup could take if everything goes wrong.", "rationale": "This describes the worst-case ceiling, which corresponds to Big-O.", "isCorrect": false },
+                        { "text": "The typical time it takes to commute to work on an average day.", "rationale": "Big-Θ bounds the performance from above and below, representing the typical or expected behavior.", "isCorrect": true },
+                        { "text": "The time it takes when the system is under a Denial of Service attack.", "rationale": "A DoS attack usually triggers the worst-case behavior (Big-O), not the typical behavior.", "isCorrect": false }
+                    ]
+                },
+                {
+                    "question": "What is the primary reason sysadmins should 'design for the worst case'?",
+                    "hint": "Think about what happens to a server during a sudden traffic spike or when processing a malicious payload.",
+                    "answerOptions": [
+                        { "text": "To ensure they always have the fastest possible hardware.", "rationale": "Hardware helps, but algorithmic design is about ensuring software stability regardless of hardware speed.", "isCorrect": false },
+                        { "text": "Because capacity planning must account for peak loads to prevent outages.", "rationale": "Systems must be robust enough to handle the maximum possible stress (worst case) without crashing.", "isCorrect": true },
+                        { "text": "To optimize the user experience for the average user.", "rationale": "Optimizing for the average user is about the Expected case, not the Worst case.", "isCorrect": false },
+                        { "text": "Because worst-case scenarios are the most common.", "rationale": "Worst-case scenarios are often rare outliers, but they are critical because they can cause failure.", "isCorrect": false }
+                    ]
+                },
+                {
+                    "question": "Which tool mentioned for log analysis uses O(n) or better efficiency for pattern matching?",
+                    "hint": "This is a standard command-line utility used to search for specific strings within files.",
+                    "answerOptions": [
+                        { "text": "A custom Python script with nested loops", "rationale": "Nested loops typically result in O(n²) complexity, which is inefficient for large logs.", "isCorrect": false },
+                        { "text": "grep", "rationale": "Grep is optimized for pattern matching and typically scans files in linear time O(n).", "isCorrect": true },
+                        { "text": "Bubble sort", "rationale": "Bubble sort is a sorting algorithm with O(n²) complexity, not a log analysis tool.", "isCorrect": false },
+                        { "text": "Manual inspection", "rationale": "Manual inspection is incredibly slow and not scalable, effectively worse than any automated algorithm.", "isCorrect": false }
+                    ]
+                }
+            ]
+        };
+
+        let currentQuestion = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            const question = quizData.questions[currentQuestion];
+            const optionsGrid = document.getElementById('options-grid');
+            
+            // Reset UI
+            document.getElementById('question-text').textContent = question.question;
+            document.getElementById('progress-text').textContent = `Question ${currentQuestion + 1} of ${quizData.questions.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentQuestion) / quizData.questions.length) * 100}%`;
+            document.getElementById('score-text').textContent = `Score: ${Math.round((score / quizData.questions.length) * 100)}%`;
+            document.getElementById('hint-text').classList.add('hidden');
+            document.getElementById('hint-text').textContent = question.hint;
+            document.getElementById('feedback-container').classList.add('hidden');
+            
+            optionsGrid.innerHTML = '';
+            
+            // Shuffle and render options
+            const shuffledOptions = [...question.answerOptions].sort(() => Math.random() - 0.5);
+            
+            shuffledOptions.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn w-full text-left p-4 rounded-xl border-2 border-slate-200 text-slate-700 font-medium hover:border-indigo-200';
+                btn.textContent = option.text;
+                btn.onclick = () => handleSelect(btn, option);
+                optionsGrid.appendChild(btn);
+            });
+        }
+
+        function handleSelect(btn, option) {
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(b => b.disabled = true);
+
+            if (option.isCorrect) {
+                btn.classList.add('correct');
+                score++;
+            } else {
+                btn.classList.add('incorrect');
+                // Show correct answer
+                buttons.forEach((b, idx) => {
+                    const originalOption = quizData.questions[currentQuestion].answerOptions.find(o => o.text === b.textContent);
+                    if(originalOption.isCorrect) b.classList.add('correct');
+                });
+            }
+
+            // Show rationale
+            const rationaleBox = document.getElementById('rationale-box');
+            rationaleBox.textContent = option.rationale;
+            rationaleBox.className = `p-4 rounded-xl text-sm leading-relaxed mb-4 ${option.isCorrect ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`;
+            
+            document.getElementById('feedback-container').classList.remove('hidden');
+        }
+
+        document.getElementById('next-btn').onclick = () => {
+            currentQuestion++;
+            if (currentQuestion < quizData.questions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        };
+
+        document.getElementById('hint-btn').onclick = () => {
+            document.getElementById('hint-text').classList.toggle('hidden');
+        };
+
+        function showResults() {
+            document.getElementById('question-area').classList.add('hidden');
+            document.getElementById('results-area').classList.remove('hidden');
+            document.getElementById('progress-bar').style.width = '100%';
+            document.getElementById('final-score').textContent = `You scored ${score} out of ${quizData.questions.length} (${Math.round((score/quizData.questions.length)*100)}%)`;
+        }
+
+        // Initialize
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
+
+
+
+
+
+
