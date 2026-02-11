@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorting & Priority Queues Master Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        .perspective-1000 { perspective: 1000px; }
+        .flashcard-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+        .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+        .flashcard-front, .flashcard-back {
+            backface-visibility: hidden;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            padding: 2rem; text-align: center; border-radius: 1rem;
+        }
+        .flashcard-back { transform: rotateY(180deg); }
+        .tab-active { border-bottom: 3px solid #4f46e5; color: #4f46e5; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+
+    <div id="app" class="max-w-4xl mx-auto py-8 px-4">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-extrabold text-slate-800">Algorithms Master Study Suite</h1>
+            <p class="text-slate-500 mt-2">Module 02: Sorting & Data Organization</p>
+        </header>
+
+        <!-- Tabs -->
+        <nav class="flex justify-center space-x-8 mb-8 border-b border-slate-200">
+            <button onclick="showTab('flashcards')" id="btn-flashcards" class="pb-4 font-bold transition tab-active">Flashcards (25)</button>
+            <button onclick="showTab('quiz')" id="btn-quiz" class="pb-4 font-bold text-slate-400 hover:text-slate-600 transition">Interactive Quiz (10)</button>
+        </nav>
+
+        <!-- Flashcards Section -->
+        <div id="tab-flashcards" class="tab-content">
+            <div class="flex flex-col items-center">
+                <div id="card-container" class="flashcard perspective-1000 w-full max-w-md h-72 mb-8" onclick="this.classList.toggle('flipped')">
+                    <div class="flashcard-inner relative w-full h-full shadow-2xl">
+                        <div class="flashcard-front bg-white border border-slate-200">
+                            <p id="front-text" class="text-xl font-semibold text-slate-800"></p>
+                        </div>
+                        <div class="flashcard-back bg-indigo-600 text-white border border-indigo-700">
+                            <p id="back-text" class="text-lg leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-8">
+                    <button onclick="prevCard()" class="p-4 bg-white shadow rounded-full hover:bg-slate-100">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <span id="card-progress" class="font-bold text-slate-600">1 / 25</span>
+                    <button onclick="nextCard()" class="p-4 bg-white shadow rounded-full hover:bg-slate-100">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+                <p class="mt-4 text-slate-400 text-sm">Click card to reveal answer</p>
+            </div>
+        </div>
+
+        <!-- Quiz Section -->
+        <div id="tab-quiz" class="tab-content hidden">
+            <div id="quiz-box" class="bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+                <div id="quiz-start">
+                    <h2 class="text-2xl font-bold mb-4">Final Knowledge Check</h2>
+                    <p class="text-slate-600 mb-6">Test your application of sorting logic and priority queue mechanics. This quiz contains 10 multiple-choice questions.</p>
+                    <button onclick="initQuiz()" class="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition">Start Quiz</button>
+                </div>
+
+                <div id="quiz-play" class="hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <span id="q-number" class="text-indigo-600 font-bold uppercase tracking-widest text-xs">Question 1/10</span>
+                        <button onclick="toggleHint()" class="text-xs font-bold text-amber-600 hover:underline">VIEW HINT</button>
+                    </div>
+                    
+                    <h3 id="q-text" class="text-xl font-bold mb-6 text-slate-800 leading-snug"></h3>
+                    
+                    <div id="hint-area" class="hidden mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 italic"></div>
+
+                    <div id="options-grid" class="space-y-3"></div>
+
+                    <div class="mt-8">
+                        <button id="btn-next" onclick="handleNext()" class="hidden w-full py-3 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-900 transition">Continue</button>
+                    </div>
+                </div>
+
+                <div id="quiz-end" class="hidden text-center">
+                    <div class="mb-4 text-5xl">🏆</div>
+                    <h2 class="text-2xl font-bold mb-2">Module Complete!</h2>
+                    <p class="text-slate-500 mb-6">Your final score:</p>
+                    <div id="final-score" class="text-6xl font-black text-indigo-600 mb-8">0/10</div>
+                    <button onclick="location.reload()" class="px-8 py-3 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition">Restart Study Session</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const flashcards = [
+            {front: "Best and Average Case Time Complexity of QuickSort", back: "$O(n \\log n)$"},
+            {front: "Worst Case Time Complexity of QuickSort", back: "$O(n^2)$ (often happens with poor pivot choice on sorted data)"},
+            {front: "Space Complexity of MergeSort", back: "$O(n)$ (requires extra memory equal to the array size)"},
+            {front: "Space Complexity of HeapSort", back: "$O(1)$ (sorts in-place with minimal extra memory)"},
+            {front: "Definition of \"Stable\" Sorting", back: "A property where the algorithm preserves the relative order of equal elements."},
+            {front: "Real-world analogy for MergeSort", back: "Organizing a massive filing system by breaking it into smaller batches, sorting each, and systematically merging them."},
+            {front: "Real-world analogy for QuickSort", back: "Sorting a deck of cards by picking one card (pivot) and dividing the rest into \"higher\" and \"lower\" piles."},
+            {front: "Four criteria routers use to sort network packets", back: "Priority Level, Destination, Packet Size, and Age."},
+            {front: "Purpose of \"Age\" in packet sorting", back: "To prevent starvation, ensuring older packets aren't ignored forever even if they have lower priority."},
+            {front: "Quality of Service (QoS)", back: "The prioritization of specific traffic (like voice or video) over less urgent data to ensure performance."},
+            {front: "Definition of a Priority Queue", back: "A data structure where elements are served based on their priority level rather than their arrival order."},
+            {front: "Data structure used to implement Priority Queues efficiently", back: "Binary Heap"},
+            {front: "Max-Heap Property", back: "The parent node is always $\\ge$ its children (Root contains the highest priority)."},
+            {front: "Time Complexity of Binary Heap Insert", back: "$O(\\log n)$"},
+            {front: "\"Bubble Up\" Process", back: "Swapping a newly inserted element with its parent until the heap property is restored."},
+            {front: "Time Complexity of Binary Heap Extract Max", back: "$O(\\log n)$"},
+            {front: "\"Bubble Down\" Process", back: "Moving the root down by swapping it with its largest child after an extraction."},
+            {front: "Time Complexity of Binary Heap Peek", back: "$O(1)$ (Instant access to the highest priority)"},
+            {front: "Common OS application of Priority Queues", back: "CPU Process Scheduling (deciding which program runs next)."},
+            {front: "Hospital Triage Analogy", back: "Critical patients are seen before minor ones regardless of arrival order."},
+            {front: "Meaning of $O(n \\log n)$", back: "Linearithmic time; standard efficiency for optimized sorting."},
+            {front: "Meaning of $O(1)$", back: "Constant time; time taken is independent of dataset size."},
+            {front: "Difference between FIFO and Priority Queue", back: "FIFO uses arrival time; Priority Queue uses importance levels."},
+            {front: "Pivot Element", back: "The reference point in QuickSort used to partition the array."},
+            {front: "Primary advantage of HeapSort over MergeSort", back: "Memory efficiency ($O(1)$ vs $O(n)$ space)."}
+        ];
+
+        const quizQuestions = [
+            {
+                q: "You are designing software for a tiny embedded sensor with very limited memory (RAM). Which algorithm is the most appropriate choice?",
+                options: [
+                    {t: "MergeSort", r: "Requires O(n) extra space for merging.", c: false},
+                    {t: "HeapSort", r: "Uses O(1) space, sorting in-place.", c: true},
+                    {t: "QuickSort", r: "Uses O(log n) space, which is more than HeapSort.", c: false},
+                    {t: "Bubble Sort", r: "O(n^2) time is inefficient for high-frequency data.", c: false}
+                ],
+                h: "Focus on the algorithm that uses almost no 'scratch paper' memory."
+            },
+            {
+                q: "In a network router, why is the 'Age' of a packet included as a sorting criterion?",
+                options: [
+                    {t: "To discard old packets.", r: "Age is for fairness, not just timeout cleanup.", c: false},
+                    {t: "To prevent 'starvation'.", r: "Ensures low-priority packets aren't stuck forever.", c: true},
+                    {t: "To group by destination.", r: "Destination sorting optimizes routing paths.", c: false},
+                    {t: "To increase latency.", r: "Network design aims to minimize latency.", c: false}
+                ],
+                h: "Think about what happens to a low-priority task in a constant stream of high-priority tasks."
+            },
+            {
+                q: "Which scenario triggers the O(n²) Worst Case for a standard QuickSort?",
+                options: [
+                    {t: "Already sorted data with first-element pivot.", r: "Creates highly unbalanced partitions (0 and n-1 elements).", c: true},
+                    {t: "Completely random integers.", r: "Randomness usually results in balanced halves.", c: false},
+                    {t: "Choosing the median as pivot.", r: "This is the ideal case for perfect division.", c: false},
+                    {t: "Large datasets.", r: "Size affects time, but complexity class is about data arrangement.", c: false}
+                ],
+                h: "Look for the pivot strategy that fails to divide the workload evenly."
+            },
+            {
+                q: "In a Max-Heap, what describes the parent-child relationship?",
+                options: [
+                    {t: "Parent < Children", r: "This is the property of a Min-Heap.", c: false},
+                    {t: "Parent >= Children", r: "Ensures the maximum value stays at the root.", c: true},
+                    {t: "Sorted Left to Right", r: "This is a Binary Search Tree property.", c: false},
+                    {t: "No required order", r: "Heaps must maintain a specific order to function.", c: false}
+                ],
+                h: "Think about where the 'Max' in Max-Heap needs to be for instant access."
+            },
+            {
+                q: "An OS scheduler uses a Priority Queue. If 'Video Editing' (High) and 'Updates' (Low) are waiting, which runs first?",
+                options: [
+                    {t: "Video Editing", r: "High priority tasks are extracted from the heap first.", c: true},
+                    {t: "System Updates", r: "Low priority tasks wait for idle CPU time.", c: false},
+                    {t: "Whichever arrived first", r: "This would be FIFO, not a Priority Queue.", c: false},
+                    {t: "Both share the CPU equally", r: "Round-robin shares equally, but priority systems don't.", c: false}
+                ],
+                h: "The structure is specifically designed to ignore arrival time in favor of importance."
+            },
+            {
+                q: "What is the time complexity of 'Extract Max' on a binary heap of size n?",
+                options: [
+                    {t: "O(1)", r: "Peeking is O(1), but removal requires restructuring.", c: false},
+                    {t: "O(log n)", r: "Requires bubbling down the height of the tree.", c: true},
+                    {t: "O(n)", r: "Heaps avoid linear scans for better efficiency.", c: false},
+                    {t: "O(n log n)", r: "This is the complexity of sorting the entire set.", c: false}
+                ],
+                h: "The operation cost is proportional to the number of levels in the tree."
+            },
+            {
+                q: "Why is MergeSort often preferred for linked lists?",
+                options: [
+                    {t: "It is stable.", r: "Preserving original order of equal items is key.", c: true},
+                    {t: "It uses less memory.", r: "MergeSort actually uses more memory than others.", c: false},
+                    {t: "It is faster on small arrays.", r: "QuickSort is usually faster for small in-memory arrays.", c: false},
+                    {t: "It is non-recursive.", r: "MergeSort is naturally a recursive algorithm.", c: false}
+                ],
+                h: "Consider if the relative order of items with the same value matters."
+            },
+            {
+                q: "A new task is added to a Binary Heap. Which process restores order?",
+                options: [
+                    {t: "Bubble Down", r: "Used after extraction, not insertion.", c: false},
+                    {t: "Bubble Up", r: "New item rises from the leaf to its proper rank.", c: true},
+                    {t: "Linear Scan", r: "Scanning would be O(n), ignoring the tree efficiency.", c: false},
+                    {t: "Partitioning", r: "This is specific to QuickSort logic.", c: false}
+                ],
+                h: "The item starts at the bottom and needs to find its level."
+            },
+            {
+                q: "Which network application gets Level 1 (Highest) priority?",
+                options: [
+                    {t: "FTP Download", r: "Tolerates high latency and jitter.", c: false},
+                    {t: "VoIP Call", r: "Real-time voice breaks instantly with jitter.", c: true},
+                    {t: "Email Sync", r: "Background tasks are low priority.", c: false},
+                    {t: "Netflix Buffer", r: "Buffering allows for lower priority than live voice.", c: false}
+                ],
+                h: "Which service is the most sensitive to sub-second delays?"
+            },
+            {
+                q: "What is the primary trade-off of MergeSort vs HeapSort?",
+                options: [
+                    {t: "MergeSort is unstable", r: "MergeSort is stable; HeapSort is not.", c: false},
+                    {t: "Space Complexity", r: "MergeSort requires O(n) space; HeapSort is O(1).", c: true},
+                    {t: "Worst Case Time", r: "Both are O(n log n) in the worst case.", c: false},
+                    {t: "Average Case Time", r: "Both are linearithmic on average.", c: false}
+                ],
+                h: "Compare the 'cost of memory' for each algorithm."
+            }
+        ];
+
+        let curCard = 0;
+        let curQ = 0;
+        let score = 0;
+        let quizAnswered = false;
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            
+            document.getElementById('btn-flashcards').className = tab === 'flashcards' ? 'pb-4 font-bold tab-active' : 'pb-4 font-bold text-slate-400 hover:text-slate-600 transition';
+            document.getElementById('btn-quiz').className = tab === 'quiz' ? 'pb-4 font-bold tab-active' : 'pb-4 font-bold text-slate-400 hover:text-slate-600 transition';
+        }
+
+        function updateCard() {
+            document.getElementById('card-container').classList.remove('flipped');
+            setTimeout(() => {
+                document.getElementById('front-text').innerHTML = flashcards[curCard].front;
+                document.getElementById('back-text').innerHTML = flashcards[curCard].back;
+                document.getElementById('card-progress').innerText = `${curCard + 1} / ${flashcards.length}`;
+                if (window.MathJax) MathJax.typeset();
+            }, 100);
+        }
+
+        function nextCard() { curCard = (curCard + 1) % flashcards.length; updateCard(); }
+        function prevCard() { curCard = (curCard - 1 + flashcards.length) % flashcards.length; updateCard(); }
+
+        function initQuiz() {
+            document.getElementById('quiz-start').classList.add('hidden');
+            document.getElementById('quiz-play').classList.remove('hidden');
+            loadQ();
+        }
+
+        function loadQ() {
+            quizAnswered = false;
+            document.getElementById('btn-next').classList.add('hidden');
+            document.getElementById('hint-area').classList.add('hidden');
+            const data = quizQuestions[curQ];
+            document.getElementById('q-number').innerText = `Question ${curQ + 1} / ${quizQuestions.length}`;
+            document.getElementById('q-text').innerText = data.q;
+            document.getElementById('hint-area').innerText = data.h;
+            
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+            data.options.forEach((opt, i) => {
+                const b = document.createElement('button');
+                b.className = "w-full p-4 text-left border-2 border-slate-100 rounded-xl hover:border-indigo-200 transition bg-slate-50 relative group";
+                b.innerHTML = `<div class="font-bold mb-1">${opt.t}</div><div class="text-sm text-slate-500 hidden rationale-text">${opt.r}</div>`;
+                b.onclick = () => selectOpt(b, opt);
+                grid.appendChild(b);
+            });
+            if (window.MathJax) MathJax.typeset();
+        }
+
+        function toggleHint() { document.getElementById('hint-area').classList.toggle('hidden'); }
+
+        function selectOpt(el, opt) {
+            if (quizAnswered) return;
+            quizAnswered = true;
+            if (opt.c) {
+                el.classList.add('border-emerald-500', 'bg-emerald-50');
+                score++;
+            } else {
+                el.classList.add('border-red-500', 'bg-red-50');
+            }
+            
+            document.querySelectorAll('.rationale-text').forEach(r => r.classList.remove('hidden'));
+            document.getElementById('btn-next').classList.remove('hidden');
+        }
+
+        function handleNext() {
+            curQ++;
+            if (curQ < quizQuestions.length) loadQ();
+            else finishQuiz();
+        }
+
+        function finishQuiz() {
+            document.getElementById('quiz-play').classList.add('hidden');
+            document.getElementById('quiz-end').classList.remove('hidden');
+            document.getElementById('final-score').innerText = `${score} / ${quizQuestions.length}`;
+        }
+
+        window.onload = updateCard;
+    </script>
+</body>
+</html>
