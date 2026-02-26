@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module 03: Study Deck & Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        
+        /* Smooth fade for tab switching */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+    <!-- Chosen Palette: Warm Neutrals (Slate/Orange/Green) for focus and clarity. -->
+    <!-- Application Structure Plan:
+         1. Tab System: "Flashcards" (Study) and "Quiz" (Practice).
+         2. Flashcard Section: 
+            - Central card container with flip animation.
+            - Navigation controls (Prev/Next).
+            - Progress bar.
+            - "Flip" button for mobile/accessibility.
+         3. Quiz Section:
+            - List view of questions (or one-by-one).
+            - Immediate feedback on selection (Correct/Incorrect + Rationale).
+            - Score tracking at the top.
+         4. Data: Embedded JSON arrays for all 25 flashcards and 10 quiz questions.
+    -->
+    <!-- Visualization & Content Choices:
+         - Flashcards: 3D Flip effect using CSS transform for engaging interaction.
+         - Quiz: Interactive selection buttons that change color (Green/Red) based on answer correctness, revealing the rationale immediately to reinforce learning.
+         - MathJax: Included for proper rendering of mathematical notation (O(log n), formulas) if needed, though most is plain text here.
+         - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">Binary Search Trees</h1>
+                <p class="text-xs text-slate-500">Module 03 Study Deck</p>
+            </div>
+            <div class="flex space-x-2 bg-slate-100 p-1 rounded-lg">
+                <button onclick="switchTab('flashcards')" id="btn-flashcards" class="px-4 py-2 rounded-md text-sm font-medium transition-all shadow-sm bg-white text-orange-600">Flashcards</button>
+                <button onclick="switchTab('quiz')" id="btn-quiz" class="px-4 py-2 rounded-md text-sm font-medium text-slate-500 hover:bg-white/50 transition-all">Quiz</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-4xl mx-auto px-4 py-8 w-full">
+        
+        <!-- FLASHCARDS TAB -->
+        <section id="tab-flashcards" class="fade-in block h-full flex flex-col items-center justify-center min-h-[60vh]">
+            
+            <div class="w-full max-w-2xl mb-6 flex justify-between items-center text-sm text-slate-500">
+                <span>Card <span id="fc-current">1</span> of <span id="fc-total">25</span></span>
+                <span class="text-orange-500 font-semibold cursor-pointer hover:underline" onclick="resetFlashcards()">Reset Deck</span>
+            </div>
+
+            <!-- Card Container -->
+            <div class="perspective-1000 w-full max-w-2xl h-80 cursor-pointer group" onclick="flipCard()">
+                <div id="flashcard-inner" class="relative w-full h-full text-center transition-transform duration-500 transform-style-3d shadow-xl rounded-2xl">
+                    
+                    <!-- Front -->
+                    <div class="absolute w-full h-full backface-hidden bg-white border border-slate-200 rounded-2xl flex flex-col items-center justify-center p-8">
+                        <span class="text-xs uppercase tracking-widest text-slate-400 mb-4 font-bold">Concept</span>
+                        <h3 id="fc-front" class="text-2xl md:text-3xl font-bold text-slate-800">
+                            <!-- JS Populates This -->
+                        </h3>
+                        <p class="mt-8 text-xs text-slate-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">Click to Flip</p>
+                    </div>
+
+                    <!-- Back -->
+                    <div class="absolute w-full h-full backface-hidden bg-slate-800 text-white rounded-2xl flex flex-col items-center justify-center p-8 rotate-y-180">
+                        <span class="text-xs uppercase tracking-widest text-orange-400 mb-4 font-bold">Answer</span>
+                        <p id="fc-back" class="text-xl md:text-2xl font-medium leading-relaxed">
+                            <!-- JS Populates This -->
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center gap-4 mt-8">
+                <button onclick="prevCard(event)" class="p-3 rounded-full bg-white border border-slate-200 shadow-sm hover:bg-slate-50 text-slate-600 transition-colors">
+                    <span class="sr-only">Previous</span>
+                    ← Prev
+                </button>
+                <button onclick="flipCard()" class="px-8 py-3 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-bold shadow-md transition-colors">
+                    Flip Card
+                </button>
+                <button onclick="nextCard(event)" class="p-3 rounded-full bg-white border border-slate-200 shadow-sm hover:bg-slate-50 text-slate-600 transition-colors">
+                    Next →
+                    <span class="sr-only">Next</span>
+                </button>
+            </div>
+            
+            <div class="w-full max-w-2xl mt-8">
+                <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                    <div id="fc-progress" class="h-full bg-orange-500 transition-all duration-300" style="width: 4%"></div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- QUIZ TAB -->
+        <section id="tab-quiz" class="hidden fade-in">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
+                    <h2 class="text-lg font-bold text-slate-800">Practice Quiz</h2>
+                    <div class="bg-slate-100 px-3 py-1 rounded-full text-sm font-medium text-slate-700">
+                        Score: <span id="quiz-score" class="text-green-600">0</span> / 10
+                    </div>
+                </div>
+
+                <div id="quiz-container" class="space-y-10">
+                    <!-- Questions will be injected here by JS -->
+                </div>
+                
+                <div class="mt-8 text-center pt-6 border-t border-slate-100">
+                     <button onclick="initQuiz()" class="text-sm text-slate-500 hover:text-orange-600 font-medium underline">Restart Quiz</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-6 mt-auto">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+            <p class="text-slate-400 text-xs">© Module 03 Study Deck. Generated from Course Material.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- DATA: Flashcards (25) ---
+        const flashcardsData = [
+            { f: "Time complexity of Linear Search vs. Binary Search", b: "Linear: O(n), Binary: O(log n)" },
+            { f: "The 'Golden Rule' of Binary Search Trees", b: "Left subtree < Parent < Right subtree" },
+            { f: "BST Search Operation Logic", b: "Start at root. If target < node, go left. If target > node, go right." },
+            { f: "Worst-case time complexity of a BST Search", b: "O(n) (Unbalanced/Degenerate tree)" },
+            { f: "BST Insert Operation Logic", b: "Follow search path until null, then place new node." },
+            { f: "BST Delete: Node with no children (Leaf)", b: "Remove directly." },
+            { f: "BST Delete: Node with one child", b: "Connect parent directly to the single child." },
+            { f: "BST Delete: Node with two children", b: "Replace with In-order Successor, then delete successor." },
+            { f: "In-order Successor definition", b: "Smallest value in the right subtree." },
+            { f: "Result of inserting sorted data into a standard BST", b: "Degenerates into a linear chain (Linked List)." },
+            { f: "Defining characteristic of an AVL Tree", b: "Height difference between left/right subtrees is ≤ 1." },
+            { f: "Balance Factor Formula", b: "Height(Left) - Height(Right)" },
+            { f: "Balance Factor indicating a left-heavy node", b: "+2 or higher" },
+            { f: "AVL Rotation purpose", b: "Local rearrangement to restore balance without breaking order." },
+            { f: "Fix for LL (Left-Left) Case", b: "Single Right Rotation" },
+            { f: "Fix for RR (Right-Right) Case", b: "Single Left Rotation" },
+            { f: "Fix for LR (Left-Right) Case", b: "Left Rotate Child, then Right Rotate Parent" },
+            { f: "Time Complexity of AVL Tree Operations", b: "Guaranteed O(log n)" },
+            { f: "Role of BSTs in DNS Caches", b: "Fast storage/lookup of domain-to-IP mappings." },
+            { f: "Structure used for IP Routing Tables", b: "Trie (Prefix Tree)" },
+            { f: "Advantage of Tries for Routing", b: "Longest Prefix Match in O(k) time." },
+            { f: "Trie vs. BST ordering rule", b: "BST: value comparison. Trie: key prefix/bits." },
+            { f: "TTL (Time To Live)", b: "Lifespan of a cached entry (removed via Delete operation)." },
+            { f: "Big-O for Constant Time", b: "O(1)" },
+            { f: "Meaning of Logarithmic Time O(log n)", b: "Steps grow very slowly (doubling data adds 1 step)." }
+        ];
+
+        // --- DATA: Quiz (10) ---
+        const quizData = [
+            {
+                q: "You insert values 10, 20, 30, 40, 50 into an empty standard BST. What is the result?",
+                options: [
+                    { t: "Perfectly balanced tree", correct: false, r: "Requires specific insertion order or balancing." },
+                    { t: "Linear chain (linked list) - O(n)", correct: true, r: "Sorted input creates a right-only skewed tree." },
+                    { t: "Wide tree - O(1)", correct: false, r: "Search is never O(1) unless it's the root." },
+                    { t: "Reverse chain", correct: false, r: "Descending order would create a reverse chain." }
+                ]
+            },
+            {
+                q: "In a BST, which node replaces a deleted node with two children?",
+                options: [
+                    { t: "Largest in left subtree", correct: false, r: "Standard is smallest in right (successor)." },
+                    { t: "Smallest in right subtree (In-order successor)", correct: true, r: "Preserves the BST ordering property." },
+                    { t: "Largest in right subtree", correct: false, r: "Would break ordering rules." },
+                    { t: "Random child", correct: false, r: "Would break ordering rules." }
+                ]
+            },
+            {
+                q: "An AVL node has Left Height 4 and Right Height 2. What is the Balance Factor?",
+                options: [
+                    { t: "+2 (Rotation needed)", correct: true, r: "4 - 2 = +2. Imbalance > 1 requires rotation." },
+                    { t: "-2 (Rotation needed)", correct: false, r: "Left is taller, so it's positive." },
+                    { t: "+2 (No action)", correct: false, r: "Action is required for abs(BF) > 1." },
+                    { t: "0 (Balanced)", correct: false, r: "Heights are unequal." }
+                ]
+            },
+            {
+                q: "Which rotation fixes an LR (Left-Right) zig-zag imbalance?",
+                options: [
+                    { t: "Single Right", correct: false, r: "For LL case." },
+                    { t: "Left on Child, Right on Parent", correct: true, r: "Straightens the zag, then balances." },
+                    { t: "Right on Child, Left on Parent", correct: false, r: "For RL case." },
+                    { t: "Double Left", correct: false, r: "Not a standard rotation name." }
+                ]
+            },
+            {
+                q: "Why are Tries used for IP Routing instead of Hash Maps?",
+                options: [
+                    { t: "Less memory", correct: false, r: "Tries can be memory heavy." },
+                    { t: "Efficient Longest Prefix Match", correct: true, r: "Crucial for finding specific subnets." },
+                    { t: "O(1) access", correct: false, r: "Hash maps are O(1), Tries are O(k)." },
+                    { t: "Self-balancing", correct: false, r: "Tries don't rebalance like AVLs." }
+                ]
+            },
+            {
+                q: "Which BST operation corresponds to DNS TTL expiration?",
+                options: [
+                    { t: "Search", correct: false, r: "Finds data." },
+                    { t: "Insert", correct: false, r: "Adds data." },
+                    { t: "Delete", correct: true, r: "Removes expired data." },
+                    { t: "Rotation", correct: false, r: "Maintenance op." }
+                ]
+            },
+            {
+                q: "Steps for Search in Balanced BST vs Linked List for 1 million items?",
+                options: [
+                    { t: "BST: ~20, List: ~1,000,000", correct: true, r: "Log2(1M) ≈ 20." },
+                    { t: "BST: ~1000, List: ~500,000", correct: false, r: "Incorrect math." },
+                    { t: "BST: ~100, List: ~10,000", correct: false, r: "Incorrect math." },
+                    { t: "Both ~500,000", correct: false, r: "That's average for List." }
+                ]
+            },
+            {
+                q: "The 'Golden Rule' of BSTs?",
+                options: [
+                    { t: "Parent = Average of children", correct: false, r: "Heap property." },
+                    { t: "Left < Parent < Right", correct: true, r: "Defines the search logic." },
+                    { t: "Tree must be complete", correct: false, r: "Heap property." },
+                    { t: "Every node has 2 children", correct: false, r: "Not required." }
+                ]
+            },
+            {
+                q: "Trade-off of AVL trees vs Simple BST?",
+                options: [
+                    { t: "Slower search", correct: false, r: "Search is guaranteed fast." },
+                    { t: "Complexity on Insert/Delete", correct: true, r: "Overhead of balancing logic." },
+                    { t: "No duplicates", correct: false, r: "Both can handle duplicates." },
+                    { t: "Text support", correct: false, r: "Both support text." }
+                ]
+            },
+            {
+                q: "Visual difference: Trie vs BST?",
+                options: [
+                    { t: "Tries organized by key prefixes", correct: true, r: "Path determined by bits/chars." },
+                    { t: "Tries grow downwards", correct: false, r: "Both do." },
+                    { t: "Tries limited to 2 children", correct: false, r: "Can have many children (e.g. 26)." },
+                    { t: "Tries can't store numbers", correct: false, r: "They can (as binary strings)." }
+                ]
+            }
+        ];
+
+        // --- STATE & UTILS ---
+        let currentCardIndex = 0;
+        let isFlipped = false;
+
+        function switchTab(tab) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            
+            // Update Buttons
+            const btnActive = "bg-white text-orange-600 shadow-sm";
+            const btnInactive = "text-slate-500 hover:bg-white/50";
+            
+            const btnFC = document.getElementById('btn-flashcards');
+            const btnQ = document.getElementById('btn-quiz');
+
+            if(tab === 'flashcards') {
+                btnFC.className = `px-4 py-2 rounded-md text-sm font-medium transition-all ${btnActive}`;
+                btnQ.className = `px-4 py-2 rounded-md text-sm font-medium transition-all ${btnInactive}`;
+            } else {
+                btnQ.className = `px-4 py-2 rounded-md text-sm font-medium transition-all ${btnActive}`;
+                btnFC.className = `px-4 py-2 rounded-md text-sm font-medium transition-all ${btnInactive}`;
+            }
+        }
+
+        // --- FLASHCARD LOGIC ---
+        function updateCardUI() {
+            const card = flashcardsData[currentCardIndex];
+            document.getElementById('fc-front').innerText = card.f;
+            document.getElementById('fc-back').innerText = card.b;
+            document.getElementById('fc-current').innerText = currentCardIndex + 1;
+            document.getElementById('fc-total').innerText = flashcardsData.length;
+            
+            // Update Progress Bar
+            const percent = ((currentCardIndex + 1) / flashcardsData.length) * 100;
+            document.getElementById('fc-progress').style.width = `${percent}%`;
+
+            // Reset Flip
+            isFlipped = false;
+            document.getElementById('flashcard-inner').classList.remove('rotate-y-180');
+        }
+
+        function flipCard() {
+            isFlipped = !isFlipped;
+            const inner = document.getElementById('flashcard-inner');
+            if(isFlipped) inner.classList.add('rotate-y-180');
+            else inner.classList.remove('rotate-y-180');
+        }
+
+        function nextCard(e) {
+            e.stopPropagation();
+            if (currentCardIndex < flashcardsData.length - 1) {
+                currentCardIndex++;
+                updateCardUI();
+            }
+        }
+
+        function prevCard(e) {
+            e.stopPropagation();
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                updateCardUI();
+            }
+        }
+
+        function resetFlashcards() {
+            currentCardIndex = 0;
+            updateCardUI();
+        }
+
+        // --- QUIZ LOGIC ---
+        let quizState = new Array(quizData.length).fill(null); // null = unanswered, true = correct, false = wrong
+
+        function initQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+            quizState.fill(null);
+            document.getElementById('quiz-score').innerText = '0';
+
+            quizData.forEach((q, idx) => {
+                // Shuffle options for randomness
+                const shuffledOpts = [...q.options].sort(() => Math.random() - 0.5);
+                
+                const qBlock = document.createElement('div');
+                qBlock.className = "quiz-question block";
+                qBlock.innerHTML = `
+                    <div class="mb-3 flex items-start gap-3">
+                        <span class="bg-slate-100 text-slate-500 text-xs font-bold px-2 py-1 rounded">Q${idx+1}</span>
+                        <p class="font-medium text-slate-800">${q.q}</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pl-10" id="q-opts-${idx}">
+                        <!-- Options injected here -->
+                    </div>
+                    <div id="feedback-${idx}" class="hidden mt-3 ml-10 p-3 rounded-lg text-sm border"></div>
+                `;
+
+                const optsContainer = qBlock.querySelector(`#q-opts-${idx}`);
+                shuffledOpts.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = "text-left p-3 rounded-lg border border-slate-200 text-sm hover:bg-slate-50 transition-colors bg-white";
+                    btn.innerText = opt.t;
+                    btn.onclick = () => handleAnswer(idx, opt, btn, shuffledOpts);
+                    optsContainer.appendChild(btn);
+                });
+
+                container.appendChild(qBlock);
+            });
+        }
+
+        function handleAnswer(qIdx, selectedOpt, btnElement, allOpts) {
+            if (quizState[qIdx] !== null) return; // Already answered
+
+            const feedbackEl = document.getElementById(`feedback-${qIdx}`);
+            const optsContainer = document.getElementById(`q-opts-${qIdx}`);
+            
+            // Mark state
+            quizState[qIdx] = selectedOpt.correct;
+
+            // Visual Updates
+            Array.from(optsContainer.children).forEach(b => {
+                b.disabled = true;
+                b.classList.add('opacity-60', 'cursor-not-allowed');
+            });
+
+            if (selectedOpt.correct) {
+                btnElement.classList.remove('bg-white', 'border-slate-200');
+                btnElement.classList.add('bg-green-50', 'border-green-500', 'text-green-800', 'font-medium');
+                btnElement.classList.remove('opacity-60'); // Keep chosen one clear
+                
+                feedbackEl.innerHTML = `<span class="font-bold text-green-700">Correct!</span> ${selectedOpt.r}`;
+                feedbackEl.className = "mt-3 ml-10 p-3 rounded-lg text-sm border border-green-200 bg-green-50 text-green-800 block fade-in";
+                
+                // Update Score
+                const currentScore = parseInt(document.getElementById('quiz-score').innerText);
+                document.getElementById('quiz-score').innerText = currentScore + 1;
+
+            } else {
+                btnElement.classList.remove('bg-white', 'border-slate-200');
+                btnElement.classList.add('bg-red-50', 'border-red-500', 'text-red-800');
+                btnElement.classList.remove('opacity-60');
+
+                feedbackEl.innerHTML = `<span class="font-bold text-red-700">Incorrect.</span> ${selectedOpt.r}`;
+                feedbackEl.className = "mt-3 ml-10 p-3 rounded-lg text-sm border border-red-200 bg-red-50 text-red-800 block fade-in";
+            }
+        }
+
+        // Initialize
+        updateCardUI();
+        initQuiz();
+
+    </script>
+</body>
+</html>
+
+

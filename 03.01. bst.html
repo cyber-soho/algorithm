@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Search Trees: The Backbone of Fast Data Lookup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom Styles for Tree Visualization using CSS only */
+        .tree-node {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 10;
+        }
+        .node-default { background-color: #64748b; } /* Slate-500 */
+        .node-active { background-color: #f97316; box-shadow: 0 0 10px rgba(249, 115, 22, 0.5); } /* Orange-500 */
+        .node-found { background-color: #22c55e; transform: scale(1.1); } /* Green-500 */
+
+        /* Connector Lines (Simple CSS borders/pseudo-elements) */
+        .connector-vertical {
+            width: 2px;
+            background-color: #cbd5e1;
+            margin: 0 auto;
+        }
+
+        /* Chart Container Strategy */
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-wrapper {
+                height: 350px;
+            }
+        }
+
+        /* Custom Scrollbar for simulations */
+        .console-log::-webkit-scrollbar {
+            width: 8px;
+        }
+        .console-log::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        .console-log::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .console-log::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* Palette Variables (applied via Tailwind config usually, here mimicked) */
+        :root {
+            --bg-warm: #fdfbf7;
+            --text-main: #334155;
+        }
+        body {
+            background-color: var(--bg-warm);
+            color: var(--text-main);
+        }
+    </style>
+    <!-- Chosen Palette: Warm Neutrals (Slate/Orange/Green) for a calm, academic yet engaging feel. 
+         Background is off-white (Warm Cream) to reduce eye strain. -->
+    <!-- Application Structure Plan:
+         1. Header: Title and Module Context.
+         2. Navigation: Tab-based system (Fundamentals, The Problem, The Solution, Real World, Analytics) to break the slide deck into digestible interactive chunks.
+         3. Fundamentals Tab: Interactive BST Search Simulation. Users type a number, and we highlight nodes in the DOM to show the O(log n) path.
+         4. The Problem Tab: Visual comparison of Balanced vs. Degenerate trees with a Chart.js comparison of their performance.
+         5. The Solution Tab: AVL Tree Rotations. A step-by-step visual explainer using CSS transitions to show how nodes move.
+         6. Real World Tab: A "DNS Cache Simulator". Users act as the browser, querying domains to see BST Insert/Search/Delete in action.
+         7. Analytics Tab: Big-O Complexity interactive chart.
+         Reasoning: This structure moves from concept -> problem -> solution -> application -> theory, reinforcing learning at each step.
+    -->
+    <!-- Visualization & Content Choices:
+         - Fundamentals: CSS-based Tree Visualization (HTML Nodes) to demonstrate structure without SVG. Interaction: JS highlighting.
+         - The Problem: Chart.js Bar Chart to compare O(n) vs O(log n) step counts.
+         - The Solution: Styled HTML/CSS Grid layout to show AVL rotation "Before" and "After" states.
+         - Real World: Text-based "Console" simulation for DNS, showing the logic flow.
+         - Analytics: Chart.js Line Chart for Big-O complexity curves.
+         - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+</head>
+<body class="font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Binary Search Trees</h1>
+                <p class="text-sm text-slate-500">Module 03: The Backbone of Fast Data Lookup</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex space-x-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
+                <!-- Navigation Tabs -->
+                <button onclick="switchTab('fundamentals')" id="tab-fundamentals" class="nav-btn px-4 py-2 rounded-full text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors whitespace-nowrap">1. Fundamentals</button>
+                <button onclick="switchTab('problem')" id="tab-problem" class="nav-btn px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-100 text-slate-600 transition-colors whitespace-nowrap">2. The Problem</button>
+                <button onclick="switchTab('solution')" id="tab-solution" class="nav-btn px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-100 text-slate-600 transition-colors whitespace-nowrap">3. AVL Solution</button>
+                <button onclick="switchTab('realworld')" id="tab-realworld" class="nav-btn px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-100 text-slate-600 transition-colors whitespace-nowrap">4. Real World</button>
+                <button onclick="switchTab('analytics')" id="tab-analytics" class="nav-btn px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-100 text-slate-600 transition-colors whitespace-nowrap">5. Analysis</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-6xl mx-auto px-4 py-8 w-full">
+
+        <!-- SECTION 1: FUNDAMENTALS -->
+        <section id="fundamentals" class="tab-content block animate-fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4">What is a Binary Search Tree (BST)?</h2>
+                <p class="text-slate-600 mb-6 leading-relaxed">
+                    A BST organizes data so that every comparison cuts your search space in half. 
+                    The rule is simple: for any node, everything to the <strong>left</strong> is smaller, and everything to the <strong>right</strong> is larger.
+                    This structure allows for <strong>O(log n)</strong> search performance—significantly faster than checking every item one by one.
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    <!-- Interactive Tree Visual -->
+                    <div class="bg-slate-50 rounded-xl p-8 border border-slate-200 flex flex-col items-center">
+                        <h3 class="text-lg font-semibold text-slate-700 mb-4">Interactive Tree Playground</h3>
+                        <p class="text-sm text-slate-500 mb-6 text-center">Enter a number (10, 30, 40, 50, 60, 70, 90) to simulate a search.</p>
+                        
+                        <div class="flex gap-2 mb-6 w-full max-w-xs">
+                            <select id="searchInput" class="flex-grow p-2 border border-slate-300 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <option value="50">50 (Root)</option>
+                                <option value="30">30</option>
+                                <option value="70">70</option>
+                                <option value="10">10</option>
+                                <option value="40">40</option>
+                                <option value="60">60</option>
+                                <option value="90">90</option>
+                                <option value="99">99 (Not Found)</option>
+                            </select>
+                            <button onclick="simulateSearch()" class="bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">Search</button>
+                        </div>
+
+                        <!-- CSS Tree Structure -->
+                        <div class="relative flex flex-col items-center gap-4">
+                            <!-- Level 0 -->
+                            <div id="node-50" class="tree-node node-default text-lg shadow-md">50</div>
+                            
+                            <div class="flex gap-16 w-full justify-center">
+                                <div class="connector-vertical h-8 -mt-4 rotate-45 origin-bottom-right w-px bg-slate-300"></div>
+                                <div class="connector-vertical h-8 -mt-4 -rotate-45 origin-bottom-left w-px bg-slate-300"></div>
+                            </div>
+
+                            <!-- Level 1 -->
+                            <div class="flex justify-between w-64">
+                                <div id="node-30" class="tree-node node-default shadow-md">30</div>
+                                <div id="node-70" class="tree-node node-default shadow-md">70</div>
+                            </div>
+
+                            <div class="flex justify-between w-64 px-4">
+                                <div class="flex gap-8">
+                                    <div class="connector-vertical h-6 w-px bg-slate-300 rotate-12"></div>
+                                    <div class="connector-vertical h-6 w-px bg-slate-300 -rotate-12"></div>
+                                </div>
+                                <div class="flex gap-8">
+                                    <div class="connector-vertical h-6 w-px bg-slate-300 rotate-12"></div>
+                                    <div class="connector-vertical h-6 w-px bg-slate-300 -rotate-12"></div>
+                                </div>
+                            </div>
+
+                            <!-- Level 2 -->
+                            <div class="flex justify-between w-80">
+                                <div id="node-10" class="tree-node node-default text-sm shadow-sm">10</div>
+                                <div id="node-40" class="tree-node node-default text-sm shadow-sm">40</div>
+                                <div id="node-60" class="tree-node node-default text-sm shadow-sm">60</div>
+                                <div id="node-90" class="tree-node node-default text-sm shadow-sm">90</div>
+                            </div>
+                        </div>
+
+                        <div id="search-feedback" class="mt-6 text-center text-sm font-medium text-slate-600 min-h-[1.5rem]">
+                            <!-- Feedback appears here -->
+                        </div>
+                    </div>
+
+                    <!-- Operations Card -->
+                    <div class="space-y-6">
+                        <div class="bg-white border border-slate-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                            <h3 class="font-bold text-slate-800 mb-2">🔍 Search</h3>
+                            <p class="text-sm text-slate-600">Start at root. If target < current, go left. If target > current, go right. If equal, found. Performance: <strong>O(log n)</strong> if balanced.</p>
+                        </div>
+                        <div class="bg-white border border-slate-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                            <h3 class="font-bold text-slate-800 mb-2">➕ Insert</h3>
+                            <p class="text-sm text-slate-600">Follow the search path until you hit a dead end (null). Place the new node there. Order of insertion matters!</p>
+                        </div>
+                        <div class="bg-white border border-slate-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                            <h3 class="font-bold text-slate-800 mb-2">❌ Delete</h3>
+                            <p class="text-sm text-slate-600">Complex. 1) No children: remove. 2) One child: skip node. 3) Two children: replace with <strong>in-order successor</strong>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: THE PROBLEM -->
+        <section id="problem" class="tab-content hidden animate-fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4">The Balance Problem</h2>
+                <p class="text-slate-600 mb-6">
+                    A BST is only fast when balanced. If you insert data in <strong>sorted order</strong> (1, 2, 3, 4, 5), the tree degenerates into a straight line (Linked List).
+                    Search time collapses from O(log n) to <strong>O(n)</strong>.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <!-- Comparison Visualization -->
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <h3 class="font-semibold text-center mb-4 text-slate-700">Visual Comparison (7 Nodes)</h3>
+                        <div class="flex justify-around items-end h-48">
+                            <!-- Balanced Tree Representation -->
+                            <div class="flex flex-col items-center">
+                                <div class="mb-2 text-xs font-bold text-green-600">Balanced</div>
+                                <div class="w-16 h-16 border-2 border-green-500 rounded-full flex items-center justify-center bg-green-50 text-green-700 text-xs text-center font-bold">
+                                    3 Levels
+                                </div>
+                                <div class="mt-2 text-xs text-slate-500">Wide & Branching</div>
+                            </div>
+                            
+                            <!-- Degenerate Tree Representation -->
+                            <div class="flex flex-col items-center">
+                                <div class="mb-2 text-xs font-bold text-red-600">Sorted Input</div>
+                                <div class="flex flex-col gap-1">
+                                    <div class="w-6 h-6 rounded-full bg-red-200 border border-red-400"></div>
+                                    <div class="w-6 h-6 rounded-full bg-red-200 border border-red-400"></div>
+                                    <div class="w-6 h-6 rounded-full bg-red-200 border border-red-400"></div>
+                                    <div class="w-6 h-6 rounded-full bg-red-200 border border-red-400"></div>
+                                    <div class="w-6 h-6 rounded-full bg-red-200 border border-red-400"></div>
+                                </div>
+                                <div class="mt-2 text-xs text-slate-500">Tall & Linear</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart Container -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="text-sm font-bold text-slate-700 mb-2 text-center">Performance Comparison (1 Million Items)</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="balanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg">
+                    <h3 class="font-bold text-orange-800">Key Takeaway</h3>
+                    <p class="text-sm text-orange-700 mt-1">
+                        Sorted input destroys balance. We need a mechanism to self-repair the tree structure. Enter: <strong>AVL Trees</strong>.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: AVL SOLUTION -->
+        <section id="solution" class="tab-content hidden animate-fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">AVL Trees & Rotations</h2>
+                        <p class="text-sm text-slate-500">Adelson-Velsky and Landis (1962)</p>
+                    </div>
+                    <div class="mt-2 md:mt-0 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-200">
+                        First Self-Balancing BST
+                    </div>
+                </div>
+
+                <p class="text-slate-600 mb-8">
+                    An AVL tree adds one rule: For every node, the height difference between left and right subtrees must be <strong>at most 1</strong>.
+                    If this rule is broken (Balance Factor ≥ 2 or ≤ -2), we perform a <strong>Rotation</strong>.
+                </p>
+
+                <!-- Rotation Interactive Demo -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <div class="space-y-6">
+                        <h3 class="font-bold text-slate-800 border-b border-slate-200 pb-2">Understanding Rotations</h3>
+                        
+                        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                            <h4 class="font-bold text-sm text-slate-700 mb-2">LL Case (Right Rotation)</h4>
+                            <p class="text-xs text-slate-600 mb-4">Occurs when the left subtree is too heavy (Balance Factor +2). We promote the middle node up.</p>
+                            
+                            <div class="flex items-center justify-between bg-white p-4 rounded shadow-inner h-40">
+                                <!-- Before State -->
+                                <div class="flex flex-col items-center w-1/3">
+                                    <div class="text-[10px] text-slate-400 mb-1">Before</div>
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 h-8 rounded-full bg-red-100 border border-red-500 flex items-center justify-center text-xs font-bold text-red-700 relative">30
+                                            <span class="absolute -right-6 text-[10px] text-red-500 font-normal">BF=+2</span>
+                                        </div>
+                                        <div class="w-px h-4 bg-slate-300 transform -rotate-45 -ml-4"></div>
+                                        <div class="w-8 h-8 rounded-full bg-blue-100 border border-blue-500 flex items-center justify-center text-xs font-bold text-blue-700 -ml-8">20</div>
+                                        <div class="w-px h-4 bg-slate-300 transform -rotate-45 -ml-12"></div>
+                                        <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-400 flex items-center justify-center text-xs font-bold text-slate-600 -ml-16">10</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-slate-400">→</div>
+
+                                <!-- After State -->
+                                <div class="flex flex-col items-center w-1/3">
+                                    <div class="text-[10px] text-slate-400 mb-1">After (Right Rotate)</div>
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 h-8 rounded-full bg-blue-100 border border-blue-500 flex items-center justify-center text-xs font-bold text-blue-700 relative">20
+                                            <span class="absolute -right-6 text-[10px] text-green-500 font-normal">BF=0</span>
+                                        </div>
+                                        <div class="flex gap-6 mt-1">
+                                            <div class="w-px h-4 bg-slate-300 transform rotate-45"></div>
+                                            <div class="w-px h-4 bg-slate-300 transform -rotate-45"></div>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-400 flex items-center justify-center text-xs font-bold text-slate-600">10</div>
+                                            <div class="w-8 h-8 rounded-full bg-red-100 border border-red-500 flex items-center justify-center text-xs font-bold text-red-700">30</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Glossary / Types -->
+                    <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                        <table class="w-full text-sm text-left text-slate-600">
+                            <thead class="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-6 py-3">Case</th>
+                                    <th class="px-6 py-3">Pattern</th>
+                                    <th class="px-6 py-3">Fix</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-white border-b border-slate-100 hover:bg-slate-50">
+                                    <td class="px-6 py-3 font-medium text-slate-900">LL (Left-Left)</td>
+                                    <td class="px-6 py-3">Left heavy, child left heavy</td>
+                                    <td class="px-6 py-3 text-blue-600">Single Right Rotation</td>
+                                </tr>
+                                <tr class="bg-white border-b border-slate-100 hover:bg-slate-50">
+                                    <td class="px-6 py-3 font-medium text-slate-900">RR (Right-Right)</td>
+                                    <td class="px-6 py-3">Right heavy, child right heavy</td>
+                                    <td class="px-6 py-3 text-blue-600">Single Left Rotation</td>
+                                </tr>
+                                <tr class="bg-white hover:bg-slate-50">
+                                    <td class="px-6 py-3 font-medium text-slate-900">LR (Left-Right)</td>
+                                    <td class="px-6 py-3">Left heavy, child right heavy</td>
+                                    <td class="px-6 py-3 text-orange-600">Left Child, then Right Parent</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="p-4 bg-slate-50 text-xs text-slate-500 italic">
+                            Result: Guaranteed O(log n) performance regardless of insertion order.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: REAL WORLD -->
+        <section id="realworld" class="tab-content hidden animate-fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Applications: DNS & Routing</h2>
+                <p class="text-slate-600 mb-6">
+                    Every time you visit a website, tree structures are at work. DNS caches use trees to store IP addresses, and Routers use Tries (prefix trees) to direct traffic.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- DNS Simulator -->
+                    <div class="md:col-span-2 bg-slate-900 rounded-xl p-6 text-slate-300 font-mono shadow-lg relative overflow-hidden">
+                        <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+                            <span class="text-green-400 font-bold">● DNS Cache Simulator</span>
+                            <span class="text-xs text-slate-500">Localhost:53</span>
+                        </div>
+                        
+                        <div id="dns-console" class="console-log h-64 overflow-y-auto mb-4 text-sm space-y-2 font-mono">
+                            <div class="text-slate-500">// System Ready. Cache Empty.</div>
+                            <div class="text-slate-500">// Enter a domain to resolve...</div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <span class="text-green-500 py-2">➜</span>
+                            <input type="text" id="domainInput" placeholder="google.com" class="bg-transparent border-none text-white focus:ring-0 w-full placeholder-slate-600" onkeydown="if(event.key === 'Enter') resolveDNS()">
+                            <button onclick="resolveDNS()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-xs transition-colors">Resolve</button>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar Info -->
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                            <h3 class="font-bold text-blue-800 text-sm mb-1">DNS Cache Operations</h3>
+                            <ul class="text-xs text-blue-700 space-y-1 list-disc pl-4">
+                                <li><strong>Search:</strong> Check if domain exists (O(log n))</li>
+                                <li><strong>Insert:</strong> Add new result (O(log n))</li>
+                                <li><strong>Delete:</strong> Remove expired TTL (O(log n))</li>
+                            </ul>
+                        </div>
+                        <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+                            <h3 class="font-bold text-indigo-800 text-sm mb-1">IP Routing (Cisco)</h3>
+                            <p class="text-xs text-indigo-700">Routers use <strong>Tries</strong> (Prefix Trees) for "Longest Prefix Match". Finds the best route in O(k) steps (k=32 bits).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: ANALYTICS -->
+        <section id="analytics" class="tab-content hidden animate-fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4">Big-O Complexity Analysis</h2>
+                <p class="text-slate-600 mb-6">
+                    Why does O(log n) matter? As data grows to millions, logarithmic time stays nearly instant, while linear time becomes unusable.
+                </p>
+
+                <!-- Big O Chart -->
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-8">
+                    <div class="chart-wrapper">
+                        <canvas id="bigOChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Comparison Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-600">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-3 rounded-tl-lg">Structure</th>
+                                <th class="px-6 py-3">Search (Avg)</th>
+                                <th class="px-6 py-3">Search (Worst)</th>
+                                <th class="px-6 py-3 rounded-tr-lg">Best For</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="bg-white border-b">
+                                <td class="px-6 py-4 font-medium text-slate-900">Simple BST</td>
+                                <td class="px-6 py-4 text-green-600">O(log n)</td>
+                                <td class="px-6 py-4 text-red-600">O(n)</td>
+                                <td class="px-6 py-4">Simple, random data</td>
+                            </tr>
+                            <tr class="bg-white border-b">
+                                <td class="px-6 py-4 font-medium text-slate-900">AVL Tree</td>
+                                <td class="px-6 py-4 text-green-600">O(log n)</td>
+                                <td class="px-6 py-4 text-green-600">O(log n)</td>
+                                <td class="px-6 py-4">Read-heavy, sorted inputs</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <td class="px-6 py-4 font-medium text-slate-900">Trie</td>
+                                <td class="px-6 py-4 text-blue-600">O(k)</td>
+                                <td class="px-6 py-4 text-blue-600">O(k)</td>
+                                <td class="px-6 py-4">Prefix matching, Routing</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-auto">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <p class="text-slate-500 text-sm">© Cyber.SoHo Module 03. Educational Material.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- State Management ---
+        const state = {
+            currentTab: 'fundamentals',
+            dnsCache: {},
+            treeValues: {
+                50: { left: 30, right: 70, el: 'node-50' },
+                30: { left: 10, right: 40, el: 'node-30' },
+                70: { left: 60, right: 90, el: 'node-70' },
+                10: { left: null, right: null, el: 'node-10' },
+                40: { left: null, right: null, el: 'node-40' },
+                60: { left: null, right: null, el: 'node-60' },
+                90: { left: null, right: null, el: 'node-90' }
+            }
+        };
+
+        // --- Navigation Logic ---
+        function switchTab(tabId) {
+            // Update State
+            state.currentTab = tabId;
+            
+            // UI Updates
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('bg-slate-200', 'text-slate-900');
+                el.classList.add('bg-slate-50', 'text-slate-600'); // Reset style
+            });
+            
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.remove('bg-slate-50', 'text-slate-600');
+            activeBtn.classList.add('bg-slate-200', 'text-slate-900'); // Active style
+
+            // Lazy Load Charts to ensure Canvas is visible (Chart.js requirement)
+            if (tabId === 'problem') initBalanceChart();
+            if (tabId === 'analytics') initBigOChart();
+        }
+
+        // --- BST Simulation Logic ---
+        function simulateSearch() {
+            const target = parseInt(document.getElementById('searchInput').value);
+            const feedback = document.getElementById('search-feedback');
+            
+            // Reset Styles
+            document.querySelectorAll('.tree-node').forEach(el => {
+                el.className = 'tree-node node-default shadow-md';
+            });
+
+            feedback.innerHTML = "Starting search at Root (50)...";
+            let current = 50;
+            let path = [];
+            
+            // Step-by-step animation simulation using setTimeout loop
+            function step(currVal) {
+                if (!state.treeValues[currVal]) return; // Should not happen for this demo data
+
+                const nodeEl = document.getElementById(state.treeValues[currVal].el);
+                nodeEl.classList.remove('node-default');
+                nodeEl.classList.add('node-active');
+
+                path.push(currVal);
+
+                setTimeout(() => {
+                    if (target === currVal) {
+                        nodeEl.classList.remove('node-active');
+                        nodeEl.classList.add('node-found');
+                        feedback.innerHTML = `<span class="text-green-600 font-bold">Found ${target}!</span> Path: ${path.join(' → ')}`;
+                    } else if (target < currVal) {
+                        if (state.treeValues[currVal].left) {
+                            nodeEl.classList.remove('node-active');
+                            nodeEl.classList.add('node-default'); // Dim parent
+                            feedback.innerHTML = `${target} < ${currVal}. Go Left...`;
+                            step(state.treeValues[currVal].left);
+                        } else {
+                            feedback.innerHTML = `<span class="text-red-500 font-bold">Not Found.</span> Reached leaf node.`;
+                            nodeEl.classList.remove('node-active'); // Revert last
+                        }
+                    } else {
+                        if (state.treeValues[currVal].right) {
+                            nodeEl.classList.remove('node-active');
+                            nodeEl.classList.add('node-default');
+                            feedback.innerHTML = `${target} > ${currVal}. Go Right...`;
+                            step(state.treeValues[currVal].right);
+                        } else {
+                            feedback.innerHTML = `<span class="text-red-500 font-bold">Not Found.</span> Reached leaf node.`;
+                            nodeEl.classList.remove('node-active');
+                        }
+                    }
+                }, 800); // 800ms delay per step
+            }
+
+            step(current);
+        }
+
+        // --- DNS Simulation Logic ---
+        const ipDatabase = {
+            'google.com': '142.250.80.46',
+            'youtube.com': '172.217.164.174',
+            'github.com': '140.82.112.3',
+            'example.com': '93.184.216.34'
+        };
+
+        function resolveDNS() {
+            const input = document.getElementById('domainInput');
+            const domain = input.value.trim().toLowerCase();
+            const consoleDiv = document.getElementById('dns-console');
+            
+            if (!domain) return;
+
+            const log = (msg, color = 'text-slate-300') => {
+                const line = document.createElement('div');
+                line.className = `${color} border-l-2 border-transparent pl-2`;
+                line.textContent = `> ${msg}`;
+                consoleDiv.appendChild(line);
+                consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            };
+
+            log(`Resolving: ${domain}...`);
+
+            // Simulate BST Search time
+            setTimeout(() => {
+                if (state.dnsCache[domain]) {
+                    // Cache Hit
+                    const hitLine = document.createElement('div');
+                    hitLine.className = "text-green-400 font-bold pl-2 border-l-2 border-green-500 bg-slate-800/50";
+                    hitLine.innerHTML = `✓ CACHE HIT! <span class="text-slate-400 font-normal">TTL: 240s</span>`;
+                    consoleDiv.appendChild(hitLine);
+                    log(`Returning IP: ${state.dnsCache[domain]}`);
+                } else {
+                    // Cache Miss -> Insert
+                    log(`Cache Miss. Querying Root Servers...`, 'text-yellow-500');
+                    setTimeout(() => {
+                        // Fake IP generation if not in simple DB
+                        const ip = ipDatabase[domain] || `192.168.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+                        state.dnsCache[domain] = ip; // BST INSERT
+                        
+                        const insertLine = document.createElement('div');
+                        insertLine.className = "text-blue-400 pl-2 border-l-2 border-blue-500";
+                        insertLine.innerHTML = `+ INSERTED into Cache (O(log n))`;
+                        consoleDiv.appendChild(insertLine);
+                        
+                        log(`Resolved: ${ip}`, 'text-white font-bold');
+                    }, 800);
+                }
+            }, 400);
+
+            input.value = '';
+        }
+
+        // --- Chart.js Initializers ---
+        let balanceChartInstance = null;
+        let bigOChartInstance = null;
+
+        function initBalanceChart() {
+            if (balanceChartInstance) return;
+            const ctx = document.getElementById('balanceChart').getContext('2d');
+            
+            balanceChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Balanced BST', 'Unbalanced (Sorted)'],
+                    datasets: [{
+                        label: 'Operations to find specific item (approx)',
+                        data: [20, 1000000], // Log n vs n for 1M items
+                        backgroundColor: ['#22c55e', '#ef4444'],
+                        borderRadius: 6,
+                        barThickness: 50
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'logarithmic', // Log scale to show the massive difference
+                            title: { display: true, text: 'Operations (Log Scale)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.raw.toLocaleString() + ' operations';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initBigOChart() {
+            if (bigOChartInstance) return;
+            const ctx = document.getElementById('bigOChart').getContext('2d');
+            
+            // Generate data points
+            const dataPoints = [10, 100, 1000, 10000];
+            const logData = dataPoints.map(n => Math.log2(n));
+            const linData = dataPoints.map(n => n);
+            const constData = dataPoints.map(n => 1);
+
+            bigOChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dataPoints,
+                    datasets: [
+                        {
+                            label: 'O(n) - Linear (Unbalanced)',
+                            data: linData,
+                            borderColor: '#ef4444',
+                            tension: 0.3
+                        },
+                        {
+                            label: 'O(log n) - Logarithmic (Balanced)',
+                            data: logData,
+                            borderColor: '#22c55e',
+                            tension: 0.3,
+                            borderWidth: 4
+                        },
+                        {
+                            label: 'O(1) - Constant',
+                            data: constData,
+                            borderColor: '#3b82f6',
+                            borderDash: [5, 5]
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'logarithmic',
+                            title: { display: true, text: 'Time / Ops' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Input Size (n)' }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize first tab styles
+        switchTab('fundamentals');
+    </script>
+</body>
+</html>
+
+
+
