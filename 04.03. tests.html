@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module 04: Iterative vs Recursive Analysis - Study Tool</title>
+    
+    <!-- Tailwind CSS for Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- MathJax Configuration for LaTeX rendering -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady();
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Flashcard 3D Flip Styles */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .transition-transform { transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); }
+        
+        /* Custom Scrollbar for Quiz */
+        .quiz-container { max-height: calc(100vh - 200px); overflow-y: auto; }
+        
+        /* Option Animations */
+        .option-button { transition: all 0.2s ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+
+    <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">Module 04 Study Tool</h1>
+            <p class="text-slate-600">Iterative vs Recursive Analysis</p>
+        </header>
+
+        <!-- Tabs Navigation -->
+        <div class="flex flex-wrap justify-center border-b border-slate-300 mb-8 space-x-2 sm:space-x-8">
+            <button id="tab-btn-flashcards" onclick="switchTab('flashcards')" class="px-6 py-3 text-lg font-semibold text-blue-600 border-b-2 border-blue-600 focus:outline-none transition-colors">
+                Flashcards (25)
+            </button>
+            <button id="tab-btn-quiz" onclick="switchTab('quiz')" class="px-6 py-3 text-lg font-semibold text-slate-500 border-b-2 border-transparent hover:text-blue-600 focus:outline-none transition-colors">
+                Practice Quiz (10)
+            </button>
+        </div>
+
+        <!-- ================= FLASHCARDS TAB ================= -->
+        <div id="tab-content-flashcards" class="block">
+            <div class="flex flex-col items-center justify-center max-w-2xl mx-auto">
+                
+                <!-- Progress -->
+                <div class="w-full flex justify-between items-center mb-4 text-sm font-medium text-slate-500">
+                    <span id="flashcard-progress">Card 1 of 25</span>
+                    <button onclick="shuffleCards()" class="flex items-center text-blue-500 hover:text-blue-700 transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Shuffle
+                    </button>
+                </div>
+
+                <!-- Card Container -->
+                <div class="w-full h-80 perspective-1000 cursor-pointer group" onclick="flipCard()">
+                    <div id="flashcard-inner" class="relative w-full h-full transform-style-3d transition-transform duration-500">
+                        <!-- Front -->
+                        <div class="absolute w-full h-full backface-hidden bg-white border border-slate-200 rounded-2xl shadow-lg flex items-center justify-center p-8 text-center group-hover:shadow-xl transition-shadow">
+                            <h2 id="flashcard-front-text" class="text-2xl font-bold text-slate-800">Front</h2>
+                            <div class="absolute bottom-4 text-xs text-slate-400 font-medium tracking-wider uppercase">Click to flip</div>
+                        </div>
+                        <!-- Back -->
+                        <div class="absolute w-full h-full backface-hidden bg-blue-50 border border-blue-100 rounded-2xl shadow-lg flex items-center justify-center p-8 text-center rotate-y-180">
+                            <p id="flashcard-back-text" class="text-xl text-slate-700 leading-relaxed">Back</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="flex justify-between w-full mt-8 gap-4">
+                    <button onclick="prevCard()" class="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-50 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200">
+                        &larr; Previous
+                    </button>
+                    <button onclick="nextCard()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        Next &rarr;
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= QUIZ TAB ================= -->
+        <div id="tab-content-quiz" class="hidden">
+            <div id="quiz-container" class="space-y-8 max-w-3xl mx-auto pb-12">
+                <!-- Quiz questions will be dynamically injected here -->
+            </div>
+            
+            <!-- Quiz Results Summary -->
+            <div id="quiz-results" class="hidden max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-lg border border-slate-200 text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">Quiz Completed!</h2>
+                <p class="text-xl text-slate-600 mb-6">You scored <span id="final-score" class="font-extrabold text-blue-600">0</span> out of 10.</p>
+                <button onclick="resetQuiz()" class="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-md">Retry Quiz</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ================= DATA =================
+
+        const flashcardsData = [
+            { front: "Definition of Recursion", back: "A function that calls itself to break a problem into smaller pieces, where each call waits for the next to finish." },
+            { front: "Definition of Iteration", back: "A process that repeats a block of code using loops, updating variables in place without creating new stack frames." },
+            { front: "Components of a Stack Frame", back: "Local variables, the return address, and the return value." },
+            { front: "Cause of Stack Overflow", back: "When the number of active stack frames exceeds the available stack memory, usually due to deep recursion." },
+            { front: "Memory Complexity of Standard Recursion", back: "$O(n)$ (linear), as it creates one frame per call." },
+            { front: "Memory Complexity of Iteration", back: "$O(1)$ (constant), as it reuses a single frame." },
+            { front: "Approximate Recursion Limit in Python", back: "~1,000 calls." },
+            { front: "Ideal Use Cases for Recursion", back: "Naturally recursive structures like tree traversal, nested data parsing (JSON/XML), and mathematical sequences." },
+            { front: "Definition of a Tail Call", back: "A recursive call that occurs as the very last operation a function performs, with no work left to do afterwards." },
+            { front: "Mechanism of Tail Call Optimization (TCO)", back: "The compiler replaces the current stack frame instead of adding a new one, effectively turning recursion into a loop internally." },
+            { front: "Memory Complexity with TCO", back: "$O(1)$ (constant)." },
+            { front: "Languages with Native TCO Support", back: "Scheme (required by standard) and Haskell." },
+            { front: "TCO Support in Java and Python", back: "Neither language supports TCO; Python's creator deliberately excluded it, and the JVM does not optimize it." },
+            { front: "Pizza Analogy for Regular Recursion", back: "A driver delivers to a house and must return to the shop after every single delivery, keeping the 'trip' open." },
+            { front: "Pizza Analogy for Tail Recursion", back: "A driver goes directly from one house to the next without returning to the shop until all deliveries are complete." },
+            { front: "DFS (Depth-First Search) Traversal Strategy", back: "Picks one branch and follows it all the way to the bottom before backtracking (LIFO)." },
+            { front: "BFS (Breadth-First Search) Traversal Strategy", back: "Processes all items at the current level before moving to the next level deeper (FIFO)." },
+            { front: "Memory Usage of DFS", back: "$O(d)$, where $d$ is the maximum depth of the tree." },
+            { front: "Memory Usage of BFS", back: "$O(w)$, where $w$ is the maximum width of any level in the tree." },
+            { front: "Primary Use Case for DFS", back: "Deep, narrow folder trees or when complete branch backups are required (e.g., rsync, tar)." },
+            { front: "Primary Use Case for BFS", back: "Wide, shallow folder trees or when a quick overview of top-level items is needed." },
+            { front: "Iterative DFS", back: "A technique using an explicit stack (loop-based) to achieve depth-first order without the risk of stack overflow." },
+            { front: "Data Structure for DFS", back: "Stack (Last In, First Out)." },
+            { front: "Data Structure for BFS", back: "Queue (First In, First Out)." },
+            { front: "Key Trade-off: Recursion vs Iteration", back: "Recursion offers cleaner code for nested structures at the cost of $O(n)$ memory; Iteration offers $O(1)$ memory safety but may be more complex to write for trees." }
+        ];
+
+        const quizData = [
+            {
+                question: "What is the fundamental difference in memory management between standard recursion and iteration?",
+                hint: "Think about what happens to the 'sticky notes' (stack frames) when a function calls itself versus when a loop repeats.",
+                options: [
+                    { text: "Recursion creates a new stack frame for each call, while iteration reuses a single frame.", rationale: "Standard recursion adds a new frame to the call stack for every function invocation, leading to linear memory growth, whereas iteration updates variables within the same existing frame.", isCorrect: true },
+                    { text: "Iteration creates a new stack frame for each loop pass, while recursion reuses frames.", rationale: "This describes the opposite of reality; loops do not create new stack frames for each pass, but standard recursion does create new frames for each call.", isCorrect: false },
+                    { text: "Recursion stores variables on the heap, while iteration stores them on the stack.", rationale: "Both recursion and iteration utilize stack memory for local variables and execution control; the difference lies in the number of frames created, not the memory region used.", isCorrect: false },
+                    { text: "Recursion uses O(1) memory by default, whereas iteration uses O(n) memory.", rationale: "Standard recursion typically requires O(n) memory due to stack growth, while iteration typically requires O(1) constant memory.", isCorrect: false }
+                ]
+            },
+            {
+                question: "Which of the following scenarios is the primary cause of a 'Stack Overflow' error?",
+                hint: "Consider which process keeps adding new layers to memory without removing the old ones until space runs out.",
+                options: [
+                    { text: "A recursive function calls itself so many times that it exceeds the available stack memory limit.", rationale: "Stack overflow occurs when the finite space allocated for the call stack is exhausted by too many active stack frames, typically from deep recursion.", isCorrect: true },
+                    { text: "An iterative loop runs infinitely without a termination condition.", rationale: "An infinite loop will cause the program to hang or freeze, but since it reuses the same stack frame, it does not consume additional stack memory to cause an overflow.", isCorrect: false },
+                    { text: "A variable is assigned a value larger than the integer limit.", rationale: "This would result in an integer overflow or a type error, not a stack overflow which specifically relates to function call depth.", isCorrect: false },
+                    { text: "The operating system fails to allocate heap memory for a large array.", rationale: "This describes a heap allocation failure or 'Out of Memory' error, which is distinct from the stack exhaustion caused by deep recursion.", isCorrect: false }
+                ]
+            },
+            {
+                question: "In Big-O notation, what is the space complexity of a standard recursive countdown function compared to an iterative one?",
+                hint: "Compare how memory usage changes as the number count increases: does it stay the same or grow proportionally?",
+                options: [
+                    { text: "Recursive: $O(n)$; Iterative: $O(1)$", rationale: "Standard recursion grows linearly with input size n because each call adds a frame, while iteration maintains constant memory usage regardless of n.", isCorrect: true },
+                    { text: "Recursive: $O(1)$; Iterative: $O(n)$", rationale: "This reverses the complexities; recursion is the method that grows linearly in memory usage, not iteration.", isCorrect: false },
+                    { text: "Recursive: $O(n)$; Iterative: $O(n)$", rationale: "Iteration does not grow linearly in memory; it reuses the same memory space throughout the loop.", isCorrect: false },
+                    { text: "Recursive: $O(\\log n)$; Iterative: $O(1)$", rationale: "While some divide-and-conquer algorithms use O(log n) stack space, a standard linear recursive countdown uses O(n).", isCorrect: false }
+                ]
+            },
+            {
+                question: "Which condition must be met for a function to be a candidate for Tail Call Optimization (TCO)?",
+                hint: "Look for the scenario where the computer has absolutely no reason to remember the current function's state once the next call begins.",
+                options: [
+                    { text: "The recursive call must be the very last operation performed by the function.", rationale: "For TCO to work, the function must return the result of the recursive call immediately, with no further calculation or work pending in the current frame.", isCorrect: true },
+                    { text: "The function must have at least two recursive calls inside it.", rationale: "The number of calls doesn't determine TCO eligibility; the position of the call relative to the return statement is what matters.", isCorrect: false },
+                    { text: "The recursive call must be inside a try-catch block.", rationale: "Exception handling blocks do not determine TCO eligibility and can sometimes interfere with optimization depending on the language.", isCorrect: false },
+                    { text: "The function must perform an addition or multiplication after the recursive call returns.", rationale: "Performing an operation after the return prevents TCO because the current stack frame must be preserved to complete that operation.", isCorrect: false }
+                ]
+            },
+            {
+                question: "How does Tail Call Optimization (TCO) technically achieve $O(1)$ memory usage?",
+                hint: "Think about the 'sticky note' analogy: instead of sticking a new note on top, what if you just erased and rewrote the current one?",
+                options: [
+                    { text: "It replaces the current stack frame with the next one instead of adding a new frame on top.", rationale: "By reusing the current frame for the next call, TCO prevents the stack from growing, effectively treating the recursion like a loop.", isCorrect: true },
+                    { text: "It increases the size of the stack memory to accommodate infinite frames.", rationale: "TCO does not change the hardware or OS limits of stack size; it optimizes how the software uses the existing space.", isCorrect: false },
+                    { text: "It moves the function execution from the stack to the heap.", rationale: "TCO is an optimization of stack usage, not a relocation of execution context to the heap.", isCorrect: false },
+                    { text: "It compresses multiple stack frames into a single binary file.", rationale: "Stack frames are active memory structures, not files, and TCO involves reuse rather than compression.", isCorrect: false }
+                ]
+            },
+            {
+                question: "Which of the following programming languages is known for NOT supporting Tail Call Optimization (TCO)?",
+                hint: "This language is very popular for data science and scripting but prioritizes readable stack traces over recursion optimization.",
+                options: [
+                    { text: "Python", rationale: "Python's creator deliberately excluded TCO to preserve stack traces for debugging, and the language runtime does not perform this optimization.", isCorrect: true },
+                    { text: "Scheme", rationale: "Scheme is a dialect of Lisp that actually requires TCO support as part of its language standard.", isCorrect: false },
+                    { text: "Haskell", rationale: "Haskell is a functional language that naturally supports tail recursion optimization.", isCorrect: false },
+                    { text: "C (with optimization flags)", rationale: "C compilers like GCC can perform TCO when specific optimization flags are enabled.", isCorrect: false }
+                ]
+            },
+            {
+                question: "You need to write a script to traverse a wide, shallow directory tree where you want a quick overview of all top-level folders first. Which traversal strategy is best?",
+                hint: "The goal is to scan the 'surface' layer completely before digging down.",
+                options: [
+                    { text: "Breadth-First Search (BFS)", rationale: "BFS visits every node at the current level before moving deeper, making it ideal for scanning wide, shallow structures.", isCorrect: true },
+                    { text: "Depth-First Search (DFS)", rationale: "DFS would dive deep into the first folder it finds, potentially ignoring other top-level folders for a long time, which is the opposite of the goal.", isCorrect: false },
+                    { text: "Linear Search", rationale: "Linear search applies to lists, not hierarchical tree structures like file systems.", isCorrect: false },
+                    { text: "Binary Search", rationale: "Binary search requires sorted data structures and is not applicable to traversing an arbitrary file system tree.", isCorrect: false }
+                ]
+            },
+            {
+                question: "Why is Breadth-First Search (BFS) typically implemented using a Queue data structure?",
+                hint: "Think about a line at a grocery store: the first people to arrive (at this level) should be served before new people (the next level).",
+                options: [
+                    { text: "A Queue follows FIFO (First In, First Out) order, ensuring nodes are processed in the order they were discovered at the current level.", rationale: "The FIFO nature of a queue ensures that all siblings at the current depth are processed before any of their children are processed.", isCorrect: true },
+                    { text: "A Queue follows LIFO (Last In, First Out) order, allowing the algorithm to backtrack quickly.", rationale: "LIFO describes a Stack, which is used for DFS, not BFS. Using a LIFO structure would result in depth-first behavior.", isCorrect: false },
+                    { text: "A Queue automatically sorts the files alphabetically.", rationale: "A standard Queue preserves insertion order and does not sort items; sorting is a separate operation.", isCorrect: false },
+                    { text: "A Queue uses less memory than a Stack for all tree types.", rationale: "Memory usage depends on tree shape; for a very wide tree, a Queue (BFS) can actually use significantly more memory than a Stack (DFS).", isCorrect: false }
+                ]
+            },
+            {
+                question: "Which real-world tool is correctly matched with its primary traversal strategy?",
+                hint: "One of these tools is famous for backing up complete folder branches on Linux/Unix systems.",
+                options: [
+                    { text: "rsync uses DFS (Depth-First Search)", rationale: "rsync typically traverses complete directory branches one by one to synchronize them, which is a depth-first approach.", isCorrect: true },
+                    { text: "robocopy uses standard recursive DFS", rationale: "The lesson notes that robocopy uses a BFS-like or iterative approach to mirror folders level-by-level, not standard recursive DFS.", isCorrect: false },
+                    { text: "tar uses Binary Search", rationale: "tar archives directory trees and must visit every file; Binary Search skips items and works on sorted lists, so it cannot be used for archiving.", isCorrect: false },
+                    { text: "Python uses BFS for all function calls", rationale: "Function calls in Python use a Call Stack, which naturally follows a LIFO pattern similar to DFS, not BFS.", isCorrect: false }
+                ]
+            },
+            {
+                question: "What is the main advantage of using Iterative DFS over Recursive DFS in production systems?",
+                hint: "It keeps the same path (going deep) but changes where the memory is stored to prevent a crash.",
+                options: [
+                    { text: "It maintains the depth-first order while avoiding the risk of stack overflow.", rationale: "By using an explicit stack data structure on the heap, Iterative DFS bypasses the limited call stack size, preventing crashes on deep trees.", isCorrect: true },
+                    { text: "It automatically converts the traversal to Breadth-First Search.", rationale: "Iterative DFS still visits nodes in a depth-first order; it does not change the logic to breadth-first (which requires a queue).", isCorrect: false },
+                    { text: "It uses $O(1)$ memory regardless of tree depth.", rationale: "Iterative DFS still requires memory to store the path (explicit stack), so it is $O(d)$, not $O(1)$.", isCorrect: false },
+                    { text: "It is always faster to write and easier to read than recursion.", rationale: "Recursive code is often more concise and readable for tree traversals; iterative versions can be more verbose and complex to implement.", isCorrect: false }
+                ]
+            }
+        ];
+
+        // ================= TAB LOGIC =================
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.getElementById('tab-content-flashcards').classList.add('hidden');
+            document.getElementById('tab-content-quiz').classList.add('hidden');
+            
+            // Un-style all buttons
+            document.getElementById('tab-btn-flashcards').className = "px-6 py-3 text-lg font-semibold text-slate-500 border-b-2 border-transparent hover:text-blue-600 focus:outline-none transition-colors";
+            document.getElementById('tab-btn-quiz').className = "px-6 py-3 text-lg font-semibold text-slate-500 border-b-2 border-transparent hover:text-blue-600 focus:outline-none transition-colors";
+
+            // Show selected tab
+            document.getElementById(`tab-content-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-btn-${tabId}`).className = "px-6 py-3 text-lg font-semibold text-blue-600 border-b-2 border-blue-600 focus:outline-none transition-colors";
+            
+            // Re-render MathJax just in case
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
+        }
+
+        // ================= FLASHCARD LOGIC =================
+        let currentCardIndex = 0;
+        let isFlipped = false;
+        let cards = [...flashcardsData];
+
+        function renderFlashcard() {
+            const card = cards[currentCardIndex];
+            document.getElementById('flashcard-front-text').innerHTML = card.front;
+            document.getElementById('flashcard-back-text').innerHTML = card.back;
+            document.getElementById('flashcard-progress').innerText = `Card ${currentCardIndex + 1} of ${cards.length}`;
+            
+            if (isFlipped) {
+                document.getElementById('flashcard-inner').classList.remove('rotate-y-180');
+                isFlipped = false;
+            }
+
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
+        }
+
+        function flipCard() {
+            isFlipped = !isFlipped;
+            const inner = document.getElementById('flashcard-inner');
+            if (isFlipped) {
+                inner.classList.add('rotate-y-180');
+            } else {
+                inner.classList.remove('rotate-y-180');
+            }
+        }
+
+        function nextCard() {
+            currentCardIndex = (currentCardIndex + 1) % cards.length;
+            renderFlashcard();
+        }
+
+        function prevCard() {
+            currentCardIndex = (currentCardIndex - 1 + cards.length) % cards.length;
+            renderFlashcard();
+        }
+
+        function shuffleCards() {
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+            currentCardIndex = 0;
+            renderFlashcard();
+        }
+
+        // ================= QUIZ LOGIC =================
+        let userAnswers = new Array(quizData.length).fill(null);
+        let score = 0;
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+            
+            quizData.forEach((q, qIndex) => {
+                // Shuffle options for rendering
+                const optionsHtml = q.options.map((opt, oIndex) => {
+                    return `
+                        <button id="btn-${qIndex}-${oIndex}" 
+                                onclick="selectAnswer(${qIndex}, ${oIndex}, ${opt.isCorrect})"
+                                class="option-button w-full text-left p-4 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50 focus:outline-none mb-3 bg-white">
+                            <span class="font-medium text-slate-800">${opt.text}</span>
+                            <div id="rationale-${qIndex}-${oIndex}" class="hidden mt-3 p-3 rounded-lg text-sm leading-relaxed border border-transparent">
+                                ${opt.rationale}
+                            </div>
+                        </button>
+                    `;
+                }).join('');
+
+                const html = `
+                    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="flex items-start justify-between mb-4">
+                            <h3 class="text-xl font-bold text-slate-900">
+                                <span class="text-blue-600 mr-2">${qIndex + 1}.</span>${q.question}
+                            </h3>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <button onclick="toggleHint(${qIndex})" class="text-sm font-semibold text-amber-600 hover:text-amber-700 flex items-center focus:outline-none">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                                Show Hint
+                            </button>
+                            <div id="hint-${qIndex}" class="hidden mt-2 p-3 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg text-sm italic">
+                                ${q.hint}
+                            </div>
+                        </div>
+
+                        <div class="options-container mt-6">
+                            ${optionsHtml}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
+        }
+
+        function toggleHint(qIndex) {
+            const hintEl = document.getElementById(`hint-${qIndex}`);
+            hintEl.classList.toggle('hidden');
+        }
+
+        function selectAnswer(qIndex, oIndex, isCorrect) {
+            // Prevent changing answer if already answered
+            if (userAnswers[qIndex] !== null) return;
+            userAnswers[qIndex] = isCorrect;
+            
+            if (isCorrect) score++;
+
+            // Update UI for the options in this question
+            quizData[qIndex].options.forEach((opt, idx) => {
+                const btn = document.getElementById(`btn-${qIndex}-${idx}`);
+                const rationale = document.getElementById(`rationale-${qIndex}-${idx}`);
+                
+                // Disable all buttons
+                btn.onclick = null;
+                btn.classList.remove('hover:border-blue-400', 'hover:bg-blue-50', 'cursor-pointer');
+                btn.classList.add('cursor-default');
+
+                if (idx === oIndex) {
+                    // Selected Option
+                    if (isCorrect) {
+                        btn.classList.replace('border-slate-200', 'border-green-500');
+                        btn.classList.add('bg-green-50');
+                        rationale.classList.replace('border-transparent', 'border-green-200');
+                        rationale.classList.add('bg-green-100', 'text-green-900');
+                    } else {
+                        btn.classList.replace('border-slate-200', 'border-red-500');
+                        btn.classList.add('bg-red-50');
+                        rationale.classList.replace('border-transparent', 'border-red-200');
+                        rationale.classList.add('bg-red-100', 'text-red-900');
+                    }
+                    rationale.classList.remove('hidden');
+                } else if (opt.isCorrect) {
+                    // Highlight the correct option if the user chose wrong
+                    btn.classList.replace('border-slate-200', 'border-green-300');
+                    btn.classList.add('bg-green-50/50');
+                    rationale.classList.replace('border-transparent', 'border-green-200');
+                    rationale.classList.add('bg-green-100', 'text-green-900');
+                    rationale.classList.remove('hidden');
+                } else {
+                    // Dim other incorrect options
+                    btn.classList.add('opacity-50');
+                }
+            });
+
+            // Check if quiz is fully completed
+            if (userAnswers.every(ans => ans !== null)) {
+                setTimeout(showResults, 1000);
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz-results').classList.remove('hidden');
+            document.getElementById('final-score').innerText = score;
+        }
+
+        function resetQuiz() {
+            userAnswers = new Array(quizData.length).fill(null);
+            score = 0;
+            document.getElementById('quiz-results').classList.add('hidden');
+            renderQuiz();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Initialize App
+        window.onload = () => {
+            renderFlashcard();
+            renderQuiz();
+        };
+
+    </script>
+</body>
+</html>
+
+

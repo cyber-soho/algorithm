@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module 04: File System Scanner - Interactive Lab Guide</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Tailwind Config for Custom Colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'lab-bg': '#F9FAFB', // Warm neutral light (Gray 50)
+                        'lab-card': '#FFFFFF',
+                        'lab-text': '#1F2937', // Gray 800
+                        'lab-primary': '#4F46E5', // Indigo 600
+                        'lab-secondary': '#F59E0B', // Amber 500
+                        'lab-accent': '#10B981', // Emerald 500
+                        'lab-danger': '#EF4444', // Red 500
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'Menlo', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Styles for Chart Containers as per requirements */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Custom Scrollbar for code blocks */
+        .code-scroll::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .code-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .code-scroll::-webkit-scrollbar-thumb {
+            background: #c7c7c7;
+            border-radius: 4px;
+        }
+    </style>
+    <!-- Chosen Palette: Warm Neutrals with Indigo/Amber Accents (Academic/Lab Theme) -->
+    <!-- Application Structure Plan:
+         The app is structured as an interactive "Virtual Lab Manual" divided into four main logical phases:
+         1. Overview & Objectives: Sets the stage, strictly following the Academic Integrity and Learning Objectives from the report.
+         2. Theory Workbench: Interactive visualizations (Stack Simulator, Big-O Graphs) to teach the core concept (Recursion vs. Iteration) before coding.
+         3. Lab Simulation: A step-by-step walkthrough of the three exercises (B.0, B.1, B.2) with interactive code breakdowns and logic simulators.
+         4. Analysis & Integration: Visualizes the expected results of the memory profiling (B.3) and outlines the project integration (Part C).
+         
+         Why this structure?
+         The source report is dense with theory and specific coding tasks. Grouping them into "Theory", "Practice", and "Analysis" helps the student build a mental model: 
+         Understand concepts -> Apply them -> Measure results.
+    -->
+    <!-- Visualization & Content Choices:
+         1. Call Stack Simulator (DOM Elements): Goal: Demonstrate R1 (Recursion) concepts. Viz: Stack of divs. Interaction: Slider to increase depth. Justification: Visualizes abstract "stack overflow" risk.
+         2. Big-O Complexity Chart (Chart.js): Goal: Compare Recursive vs Iterative space complexity. Viz: Line chart. Interaction: Toggle scenarios (Pathological vs Balanced). Justification: Directly addresses "A.3 Stack Depth Thought Experiment".
+         3. Memory Usage Profiling (Chart.js): Goal: Visualize Exercise B.3 results. Viz: Grouped Bar/Line chart. Interaction: View theoretical data. Justification: Shows the "payoff" of the lab work.
+         4. Logic Flowcharts (HTML/CSS): Goal: Explain B.2 Backup Verifier. Viz: Flexbox layout of logic steps. Interaction: Highlight active step. Justification: Clarifies the algorithm before coding.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-lab-bg text-lab-text font-sans antialiased leading-relaxed">
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <span class="font-bold text-xl text-lab-primary tracking-tight">Module 04: Lab Workbench</span>
+                    </div>
+                </div>
+                <div class="hidden sm:flex sm:space-x-8">
+                    <button onclick="switchTab('overview')" class="nav-link border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" id="nav-overview">Overview</button>
+                    <button onclick="switchTab('theory')" class="nav-link border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" id="nav-theory">Theory & Concepts</button>
+                    <button onclick="switchTab('lab')" class="nav-link border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" id="nav-lab">Lab Exercises</button>
+                    <button onclick="switchTab('analysis')" class="nav-link border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" id="nav-analysis">Memory Analysis</button>
+                </div>
+                <!-- Mobile menu button listener handled in JS -->
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Section 1: Overview & Objectives -->
+        <section id="section-overview" class="space-y-8 animate-fade-in">
+            <!-- Header -->
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-lab-primary">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">File System Scanner</h1>
+                <p class="text-lg text-gray-600">Iterative vs. Recursive Analysis, Stack Depth, and Memory Management.</p>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">Ponderation: 1-2-1</span>
+                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">Time: ≥ 4 hours</span>
+                    <span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-semibold">Lang: Python 3.10+</span>
+                </div>
+            </div>
+
+            <!-- Disclaimer -->
+            <div class="bg-red-50 rounded-lg p-6 border border-red-100">
+                <h3 class="text-red-800 font-bold flex items-center mb-2">
+                    <span class="text-xl mr-2">⚠️</span> Academic Integrity & Responsible Use
+                </h3>
+                <p class="text-red-700 text-sm mb-2">
+                    This lab operates in a <strong>simulated, sandboxed environment</strong>. The tools mirrors real-world security practices strictly for <strong>educational purposes</strong>.
+                </p>
+                <p class="text-red-700 text-sm">
+                    Compliance with the Computer Fraud and Abuse Act (CFAA) and institutional codes of conduct is mandatory. Do not scan systems you do not own.
+                </p>
+            </div>
+
+            <!-- Learning Objectives Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">Core Competencies</h2>
+                    <ul class="space-y-3">
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 rounded-full bg-lab-primary text-white flex items-center justify-center text-xs mt-0.5">1</span>
+                            <span class="ml-3 text-gray-600">Distinguish <strong>recursive</strong> vs. <strong>iterative</strong> strategies (Call-stack vs. Heap).</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 rounded-full bg-lab-primary text-white flex items-center justify-center text-xs mt-0.5">2</span>
+                            <span class="ml-3 text-gray-600">Analyze <strong>Big-O</strong> complexity for directory trees of varying depth.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 rounded-full bg-lab-primary text-white flex items-center justify-center text-xs mt-0.5">3</span>
+                            <span class="ml-3 text-gray-600">Profile <strong>memory usage</strong> using tracing tools (`tracemalloc`).</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">Lab Deliverables</h2>
+                    <div class="space-y-2 text-sm text-gray-600">
+                        <div class="flex justify-between border-b pb-2"><span>Recursive Analyzer</span><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">recursive_analyzer.py</span></div>
+                        <div class="flex justify-between border-b pb-2"><span>Backup Verifier</span><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">backup_verifier.py</span></div>
+                        <div class="flex justify-between border-b pb-2"><span>Memory Profiler</span><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">memory_profiler.py</span></div>
+                        <div class="flex justify-between"><span>Lab Report</span><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">lab_report.md</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-8">
+                <button onclick="switchTab('theory')" class="bg-lab-primary hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition transform hover:-translate-y-1">
+                    Start Background Reading & Theory &rarr;
+                </button>
+            </div>
+        </section>
+
+        <!-- Section 2: Theory & Visuals -->
+        <section id="section-theory" class="hidden space-y-8 animate-fade-in">
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">R1: The Recursion Contract & Stack Depth</h2>
+                <p class="text-gray-600 mb-6">
+                    Before coding, visualize the difference between the <strong>OS Call Stack</strong> (used by recursion) and the <strong>Heap</strong> (used by iterative approaches with explicit stacks).
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Interactive Stack Simulator -->
+                    <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                        <h3 class="font-bold text-lg mb-4 text-center">Interactive Call Stack Simulator</h3>
+                        <p class="text-xs text-gray-500 mb-4 text-center">Drag the slider to increase directory depth and see the stack grow.</p>
+                        
+                        <div class="flex flex-col items-center">
+                            <input type="range" min="0" max="15" value="0" id="stackSlider" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-6 accent-lab-primary">
+                            <div class="flex justify-between w-full text-xs text-gray-500 mb-2">
+                                <span>Depth: 0</span>
+                                <span id="depthDisplay">Current Depth: 0</span>
+                                <span>Max: 15</span>
+                            </div>
+
+                            <!-- The Visual Stack -->
+                            <div class="w-64 h-80 bg-white border-2 border-gray-300 rounded-lg relative overflow-hidden shadow-inner flex flex-col-reverse p-2 gap-1 overflow-y-auto" id="visualStack">
+                                <!-- Stack frames injected here -->
+                                <div class="text-center text-gray-300 text-sm mt-auto w-full pt-10 absolute top-1/2 left-0 transform -translate-y-1/2">
+                                    Stack Empty
+                                </div>
+                            </div>
+                            
+                            <div id="stackWarning" class="hidden mt-4 text-lab-danger font-bold text-sm animate-pulse">
+                                ⚠️ Stack Overflow Risk! (Simulated)
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-white rounded border text-sm text-gray-600">
+                            <strong>Insight:</strong> For a depth of <em>d</em>, a recursive function holds <em>d</em> active frames. Python's default limit is 1000.
+                        </div>
+                    </div>
+
+                    <!-- Big-O Chart -->
+                    <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                        <h3 class="font-bold text-lg mb-4 text-center">Space Complexity: Recursive vs. Iterative</h3>
+                        <p class="text-xs text-gray-500 mb-4 text-center">Comparison for a "Pathological" tree (single long chain).</p>
+                        
+                        <div class="chart-container">
+                            <canvas id="complexityChart"></canvas>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-white rounded border text-sm text-gray-600">
+                            <ul class="list-disc pl-4 space-y-1">
+                                <li><strong>Recursive:</strong> O(d) - Linear growth with depth.</li>
+                                <li><strong>Iterative:</strong> O(w) - Linear with width. For a straight chain, w=1 (Constant O(1)).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reflection Quiz -->
+            <div class="bg-indigo-50 rounded-lg p-6 border border-indigo-100">
+                <h3 class="text-lg font-bold text-lab-primary mb-4">Part A: Conceptual Check</h3>
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded shadow-sm cursor-pointer hover:bg-gray-50 transition" onclick="toggleAnswer('a1')">
+                        <p class="font-semibold text-gray-800">Q1: What is the base case for `recursive_scan`?</p>
+                        <p id="a1" class="hidden text-gray-600 mt-2 border-t pt-2 text-sm">
+                            The base case is when `path` is a <strong>FILE</strong> (not a directory). The function returns stats for that single file immediately without further recursion.
+                        </p>
+                    </div>
+                    <div class="bg-white p-4 rounded shadow-sm cursor-pointer hover:bg-gray-50 transition" onclick="toggleAnswer('a2')">
+                        <p class="font-semibold text-gray-800">Q2: Why is Iterative more robust for production?</p>
+                        <p id="a2" class="hidden text-gray-600 mt-2 border-t pt-2 text-sm">
+                            It moves state management from the OS call stack (limited size, hard crash on overflow) to the <strong>Heap</strong> (much larger, manageable RAM). It can handle millions of nested folders.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Lab Exercises -->
+        <section id="section-lab" class="hidden space-y-8 animate-fade-in">
+            <!-- Tabs for Exercises -->
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                    <button onclick="switchLabTab('b1')" id="tab-b1" class="lab-tab-link border-lab-primary text-lab-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">B.1 Recursive Analyzer</button>
+                    <button onclick="switchLabTab('b2')" id="tab-b2" class="lab-tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">B.2 Backup Verifier</button>
+                    <button onclick="switchLabTab('b3')" id="tab-b3" class="lab-tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">B.3 Memory Profiling</button>
+                </nav>
+            </div>
+
+            <!-- Exercise B.1 Content -->
+            <div id="content-b1" class="lab-content">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">Exercise B.1: Recursive Directory Analyzer</h2>
+                            <p class="text-gray-600 mt-1">Implement a DFS traversal using system recursion.</p>
+                        </div>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Time: 50 mins</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Code Structure Blueprint -->
+                        <div class="bg-gray-800 rounded-lg p-4 font-mono text-sm text-gray-300 code-scroll overflow-x-auto">
+<pre class="whitespace-pre"><span class="text-purple-400">def</span> <span class="text-blue-400">recursive_analyze</span>(path, depth=0):
+    <span class="text-gray-500"># 1. BASE CASE</span>
+    <span class="text-purple-400">if</span> os.path.isfile(path):
+        <span class="text-yellow-400">return</span> { <span class="text-green-400">"size"</span>: getsize(path), ... }
+
+    <span class="text-gray-500"># 2. PREPARE AGGREGATOR</span>
+    stats = { <span class="text-green-400">"total_size"</span>: 0, <span class="text-green-400">"files"</span>: 0 }
+
+    <span class="text-gray-500"># 3. RECURSIVE STEP</span>
+    <span class="text-purple-400">for</span> entry <span class="text-purple-400">in</span> os.listdir(path):
+        child_stats = <span class="text-blue-400">recursive_analyze</span>(entry, depth+1)
+        
+        <span class="text-gray-500"># 4. MERGE RESULTS</span>
+        stats[<span class="text-green-400">"total_size"</span>] += child_stats[<span class="text-green-400">"total_size"</span>]
+        <span class="text-gray-500"># ... merge counts, find largest file ...</span>
+
+    <span class="text-yellow-400">return</span> stats</pre>
+                        </div>
+
+                        <!-- Logic Explainer -->
+                        <div class="space-y-4">
+                            <div class="p-4 bg-green-50 rounded border border-green-100">
+                                <h4 class="font-bold text-green-800">The Merge Logic</h4>
+                                <p class="text-sm text-green-700">The tricky part is not the traversal, but the <strong>aggregation</strong>. Each stack frame computes stats for its small subtree and passes it <em>up</em> to the parent.</p>
+                            </div>
+                            <div class="p-4 bg-yellow-50 rounded border border-yellow-100">
+                                <h4 class="font-bold text-yellow-800">Critical Requirement</h4>
+                                <p class="text-sm text-yellow-700">You must return a nested summary. Don't print inside the function! Return a <code>dict</code>.</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 rounded border border-gray-200">
+                                <h4 class="font-bold text-gray-800">Interactive: Expected Output</h4>
+                                <p class="text-xs text-gray-500 mb-2">If you scan the synthetic test tree, the dict should look like this:</p>
+                                <div class="font-mono text-xs bg-white p-2 border rounded">
+                                    {<br>
+                                    &nbsp;&nbsp;"path": "/test_tree",<br>
+                                    &nbsp;&nbsp;"num_files": 42,<br>
+                                    &nbsp;&nbsp;"total_size_bytes": 1048576,<br>
+                                    &nbsp;&nbsp;"deepest_path": "/test_tree/a/b/c",<br>
+                                    &nbsp;&nbsp;"depth": 5<br>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exercise B.2 Content -->
+            <div id="content-b2" class="hidden lab-content">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">Exercise B.2: Iterative Backup Verifier</h2>
+                            <p class="text-gray-600 mt-1">Build a robust tool using an explicit stack and checksum verification.</p>
+                        </div>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Time: 55 mins</span>
+                    </div>
+
+                    <!-- Workflow Visualizer -->
+                    <div class="mb-8">
+                        <h3 class="font-bold text-lg mb-4">Verification Logic Flow</h3>
+                        <div class="flex flex-col md:flex-row gap-4 justify-between items-center text-sm">
+                            <div class="w-full md:w-1/4 bg-gray-100 p-4 rounded text-center border-2 border-gray-200">
+                                <div class="font-bold">1. Load Manifest</div>
+                                <div class="text-xs text-gray-500 mt-1">Read JSON map of expected hashes</div>
+                            </div>
+                            <div class="hidden md:block text-2xl text-gray-400">→</div>
+                            <div class="w-full md:w-1/4 bg-gray-100 p-4 rounded text-center border-2 border-gray-200">
+                                <div class="font-bold">2. Iterative Walk</div>
+                                <div class="text-xs text-gray-500 mt-1">While stack: pop(), listdir(), push dirs</div>
+                            </div>
+                            <div class="hidden md:block text-2xl text-gray-400">→</div>
+                            <div class="w-full md:w-1/4 bg-lab-secondary text-white p-4 rounded text-center shadow-md">
+                                <div class="font-bold">3. Check File</div>
+                                <div class="text-xs text-white/90 mt-1">Size Check (Fast) → Hash Check (Slow)</div>
+                            </div>
+                            <div class="hidden md:block text-2xl text-gray-400">→</div>
+                            <div class="w-full md:w-1/4 bg-gray-100 p-4 rounded text-center border-2 border-gray-200">
+                                <div class="font-bold">4. Report</div>
+                                <div class="text-xs text-gray-500 mt-1">OK, CORRUPTED, MISSING, NEW</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manifest JSON Preview -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                             <h4 class="font-bold text-gray-800 mb-2">The Manifest Structure (JSON)</h4>
+                             <p class="text-sm text-gray-600 mb-2">Your tool must generate this file first.</p>
+                             <div class="bg-gray-50 border p-3 rounded font-mono text-xs code-scroll overflow-x-auto h-48">
+{
+  "metadata": {
+    "root": "/backup/2024",
+    "algorithm": "sha256"
+  },
+  "entries": {
+    "logs/error.log": {
+      "checksum": "a1b2c3d4...",
+      "size_bytes": 1024
+    },
+    "config/settings.json": {
+      "checksum": "e5f6g7h8...",
+      "size_bytes": 512
+    }
+  }
+}
+                             </div>
+                        </div>
+                        
+                        <!-- Interactive Integrity Checker -->
+                        <div class="bg-indigo-50 p-4 rounded border border-indigo-100">
+                            <h4 class="font-bold text-lab-primary mb-2">Integrity Simulator</h4>
+                            <p class="text-xs text-gray-600 mb-4">Simulate how the verifier detects corruption.</p>
+                            
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span>Expected Hash:</span>
+                                    <span class="font-mono bg-white px-2 py-1 rounded border">abc12345</span>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold block mb-1">File Content:</label>
+                                    <input type="text" id="fileInput" value="My Important Data" class="w-full border rounded px-2 py-1 text-sm" oninput="updateSimulation()">
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span>Calculated Hash:</span>
+                                    <span id="simHash" class="font-mono bg-white px-2 py-1 rounded border text-gray-500">...</span>
+                                </div>
+                                <div id="simResult" class="text-center font-bold text-sm py-2 rounded bg-gray-200 text-gray-500">
+                                    Status: Waiting...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Exercise B.3 Content -->
+             <div id="content-b3" class="hidden lab-content">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">Exercise B.3: Memory Usage Analysis</h2>
+                            <p class="text-gray-600 mt-1">Use `tracemalloc` to prove your Big-O analysis.</p>
+                        </div>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Time: 50 mins</span>
+                    </div>
+                    
+                    <div class="prose max-w-none text-gray-600 mb-6">
+                        <p>
+                            You will write a script <code>memory_profiler.py</code> that runs a scaling experiment. 
+                            It generates trees of depths 1 to 8 and measures peak memory for both approaches.
+                        </p>
+                    </div>
+
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <span class="text-yellow-400 text-xl">💡</span>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-yellow-700">
+                                    <strong>Hypothesis:</strong> In a balanced tree, Recursion O(d) might actually use <em>less</em> heap memory than Iterative O(w) because the width of a tree grows faster than its depth (Depth ~ log N, Width ~ N/2). However, Recursion puts pressure on the limited <strong>Call Stack</strong>, while Iterative uses the abundant <strong>Heap</strong>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 text-center">
+                        <button onclick="switchTab('analysis')" class="bg-lab-accent hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded transition">
+                            View Expected Analysis Results &rarr;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Analysis & Results -->
+        <section id="section-analysis" class="hidden space-y-8 animate-fade-in">
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Memory Scaling Experiment</h2>
+                <p class="text-gray-600 mb-6">Visualizing the data from `memory_scaling_results.csv`.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Results Chart -->
+                    <div>
+                        <div class="chart-container">
+                            <canvas id="memoryResultsChart"></canvas>
+                        </div>
+                        <p class="text-xs text-center text-gray-500 mt-2">
+                            *Mock data representing typical lab results for a balanced tree structure.
+                        </p>
+                    </div>
+
+                    <!-- Analysis Points -->
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="font-bold text-gray-900">Key Observation 1: The Cross-Over</h3>
+                            <p class="text-sm text-gray-600 mt-1">
+                                For shallow, wide trees (low depth), the Iterative approach (storing siblings in a list) might consume more Heap memory than the Recursive frames. However, as depth increases linearly in pathological cases, recursion memory spikes.
+                            </p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-900">Key Observation 2: Crash Point</h3>
+                            <p class="text-sm text-gray-600 mt-1">
+                                Notice that around Depth ~1000 (Python's default limit), the recursive line would terminate abruptly (Crash), whereas the iterative line continues smoothly as long as RAM is available.
+                            </p>
+                        </div>
+                        <div class="bg-gray-100 p-4 rounded">
+                            <h3 class="font-bold text-gray-900 text-sm">Part C: Project Integration</h3>
+                            <p class="text-xs text-gray-600 mt-1">
+                                Don't forget to expose the unified API in <code>modules/file_scanner.py</code>:
+                            </p>
+                            <ul class="list-disc pl-4 mt-2 text-xs text-gray-600 font-mono">
+                                <li>def scan_directory(path, mode="recursive")</li>
+                                <li>def create_integrity_manifest(path)</li>
+                                <li>def verify_integrity(path, manifest)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Footer / Progress -->
+        <footer class="mt-12 border-t border-gray-200 pt-6 pb-10 text-center text-sm text-gray-500">
+            <p>Module 04 Lab Sheet • Algorithms for CS Undergraduates</p>
+            <p class="mt-2">Simulated Environment • No Files Scanned</p>
+        </footer>
+
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- State Management ---
+        const state = {
+            currentTab: 'overview',
+            stackDepth: 0,
+            maxDepth: 15,
+            simulationInput: '',
+        };
+
+        // --- Navigation Logic ---
+        function switchTab(tabId) {
+            // Hide all sections
+            document.querySelectorAll('section').forEach(el => {
+                el.classList.add('hidden');
+            });
+            // Reset nav styles
+            document.querySelectorAll('.nav-link').forEach(el => {
+                el.classList.remove('border-lab-primary', 'text-gray-900');
+                el.classList.add('border-transparent', 'text-gray-500');
+            });
+
+            // Show selected
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabId}`).classList.remove('border-transparent', 'text-gray-500');
+            document.getElementById(`nav-${tabId}`).classList.add('border-lab-primary', 'text-gray-900');
+            
+            state.currentTab = tabId;
+
+            // Trigger chart renders if needed
+            if (tabId === 'theory') renderComplexityChart();
+            if (tabId === 'analysis') renderMemoryChart();
+        }
+
+        function switchLabTab(labId) {
+             document.querySelectorAll('.lab-content').forEach(el => el.classList.add('hidden'));
+             document.querySelectorAll('.lab-tab-link').forEach(el => {
+                 el.classList.remove('border-lab-primary', 'text-lab-primary');
+                 el.classList.add('border-transparent', 'text-gray-500');
+             });
+
+             document.getElementById(`content-${labId}`).classList.remove('hidden');
+             document.getElementById(`tab-${labId}`).classList.remove('border-transparent', 'text-gray-500');
+             document.getElementById(`tab-${labId}`).classList.add('border-lab-primary', 'text-lab-primary');
+        }
+
+        // --- Interactive: Theory Section (Stack Simulator) ---
+        const stackSlider = document.getElementById('stackSlider');
+        const visualStack = document.getElementById('visualStack');
+        const depthDisplay = document.getElementById('depthDisplay');
+        const stackWarning = document.getElementById('stackWarning');
+
+        stackSlider.addEventListener('input', (e) => {
+            const depth = parseInt(e.target.value);
+            depthDisplay.innerText = `Current Depth: ${depth}`;
+            updateStackVisual(depth);
+        });
+
+        function updateStackVisual(depth) {
+            visualStack.innerHTML = ''; // Clear
+            if (depth === 0) {
+                 visualStack.innerHTML = '<div class="text-center text-gray-300 text-sm mt-auto w-full pt-10 absolute top-1/2 left-0 transform -translate-y-1/2">Stack Empty</div>';
+                 stackWarning.classList.add('hidden');
+                 return;
+            }
+
+            for (let i = 0; i < depth; i++) {
+                const frame = document.createElement('div');
+                frame.className = 'bg-lab-primary text-white text-xs p-2 rounded shadow-sm border border-indigo-400 flex justify-between items-center transform transition-all duration-300 ease-out animate-slide-in';
+                frame.innerHTML = `<span>Frame ${i+1}</span> <span class="font-mono opacity-75">addr:${1000 + (i*8)}</span>`;
+                // Add to top (technically bottom of flex-col-reverse)
+                visualStack.appendChild(frame);
+            }
+
+            if (depth >= 12) {
+                stackWarning.classList.remove('hidden');
+            } else {
+                stackWarning.classList.add('hidden');
+            }
+        }
+
+        function toggleAnswer(id) {
+            const el = document.getElementById(id);
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+
+        // --- Interactive: Lab B.2 Integrity Simulator ---
+        function updateSimulation() {
+            const input = document.getElementById('fileInput').value;
+            const resBox = document.getElementById('simResult');
+            const hashBox = document.getElementById('simHash');
+            
+            // Mock Hash: Simple checksum for simulation
+            let hash = 0;
+            for (let i = 0; i < input.length; i++) {
+                hash = ((hash << 5) - hash) + input.charCodeAt(i);
+                hash |= 0; 
+            }
+            const hexHash = Math.abs(hash).toString(16).padEnd(8, '0'); // Pseudo hex
+            
+            hashBox.innerText = hexHash;
+
+            // Hardcoded "Expected" hash logic for demo
+            // Let's say "My Important Data" is the correct content -> Hash: 68623635
+            // Actually, let's just use string comparison for the demo to make it obvious
+            
+            if (input === "My Important Data") {
+                resBox.innerText = "Status: ✅ OK";
+                resBox.className = "text-center font-bold text-sm py-2 rounded bg-green-100 text-green-700 transition";
+            } else {
+                resBox.innerText = "Status: ❌ CORRUPTED / MODIFIED";
+                resBox.className = "text-center font-bold text-sm py-2 rounded bg-red-100 text-red-700 transition";
+            }
+        }
+
+        // --- Charts (Chart.js) ---
+        let complexityChartInstance = null;
+        let memoryChartInstance = null;
+
+        function renderComplexityChart() {
+            if (complexityChartInstance) return; // Already rendered
+            
+            const ctx = document.getElementById('complexityChart').getContext('2d');
+            
+            // Generate data for "Pathological" case (Line)
+            const depths = [1, 100, 500, 1000, 5000];
+            const recursiveSpace = depths.map(d => d); // O(d)
+            const iterativeSpace = depths.map(d => 1); // O(1) for line
+
+            complexityChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: depths,
+                    datasets: [
+                        {
+                            label: 'Recursive O(d)',
+                            data: recursiveSpace,
+                            borderColor: '#4F46E5', // Indigo
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Iterative O(1)',
+                            data: iterativeSpace,
+                            borderColor: '#F59E0B', // Amber
+                            borderDash: [5, 5],
+                            fill: false,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Memory Units (Frames/Nodes)' },
+                            type: 'logarithmic'
+                        },
+                        x: {
+                            title: { display: true, text: 'Tree Depth (d)' }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderMemoryChart() {
+            if (memoryChartInstance) return;
+
+            const ctx = document.getElementById('memoryResultsChart').getContext('2d');
+            
+            // Mock Data mimicking "Balanced Tree" growth
+            const depths = [1, 2, 3, 4, 5, 6, 7, 8];
+            // Recursive: Linear growth with depth (Stack frames) + some heap for dicts
+            const recMem = [15, 18, 22, 28, 35, 45, 58, 75]; 
+            // Iterative: Depends on width. Balanced tree width grows exponentially!
+            // Width at depth d = branching^d.
+            // This is the "Aha!" moment. Iterative BFS/DFS queue can explode on wide trees.
+            // But lab says "Explicit Stack vs Call Stack". 
+            // Let's assume the mock results show Recursive slightly lower initially, but linear trend.
+            const iterMem = [16, 20, 26, 34, 44, 56, 70, 88];
+
+            memoryChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: depths.map(d => `Depth ${d}`),
+                    datasets: [
+                        {
+                            label: 'Recursive Peak (KiB)',
+                            data: recMem,
+                            backgroundColor: '#4F46E5',
+                        },
+                        {
+                            label: 'Iterative Peak (KiB)',
+                            data: iterMem,
+                            backgroundColor: '#F59E0B',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Peak Memory (KiB)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize default state
+        updateSimulation();
+
+    </script>
+</body>
+</html>
+
+

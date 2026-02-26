@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module 04: Iterative vs Recursive Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom Scrollbar for stack container */
+        .stack-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .stack-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .stack-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .stack-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Node animation styles */
+        .node-active {
+            background-color: #3b82f6 !important; /* blue-500 */
+            color: white !important;
+            transform: scale(1.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .node-visited {
+            background-color: #10b981 !important; /* emerald-500 */
+            color: white !important;
+        }
+        
+        .chart-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 600px; 
+            margin-left: auto; 
+            margin-right: auto; 
+            height: 300px; 
+            max-height: 400px; 
+        } 
+        @media (min-width: 768px) { 
+            .chart-container { height: 350px; } 
+        }
+
+        /* Connecting lines for tree (HTML/CSS approach) */
+        .tree-line-v {
+            position: absolute;
+            width: 2px;
+            background-color: #e2e8f0;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 0;
+        }
+        .tree-line-h {
+            position: absolute;
+            height: 2px;
+            background-color: #e2e8f0;
+            top: 50%;
+            left: 0;
+            right: 0;
+            z-index: 0;
+        }
+    </style>
+    <!-- Chosen Palette: Warm Neutral Background (Stone/Slate) with Blue (Safe/Iterative), Rose (Risk/Recursive), and Emerald (Success/TCO) accents. -->
+    <!-- Application Structure Plan: 
+         1. Hero Section: Sets the context (Algorithms Course) and defines the core conflict (Recursion vs Iteration).
+         2. Interactive Lab 1 (Memory): A split-screen visualizer comparing Stack Growth (Recursion) vs Value Update (Iteration) side-by-side with a Chart.js graph tracking memory usage O(n) vs O(1).
+         3. Concept Deep Dive (TCO): Explains Tail Call Optimization using the "Pizza Delivery" analogy with an interactive stepper to visualize the "Return" vs "Direct" path. Includes a language support table.
+         4. Interactive Lab 2 (Traversal): A visual file system tree where users can trigger BFS vs DFS animations to see the order of visitation, clarifying the O(w) vs O(d) trade-off.
+         5. Summary & Reference: Big-O cheat sheet and key takeaways.
+         Why: This structure moves from the fundamental "what & why" (Memory), to the "advanced optimization" (TCO), to "real-world application" (Traversal), keeping the user engaged with active simulations at each step. 
+    -->
+    <!-- Visualization & Content Choices:
+         - Stack Visualizer: HTML div blocks added dynamically. Justification: Best way to show "stacking" frames physically.
+         - Memory Chart: Chart.js Line Chart. Justification: Clearly shows linear growth vs constant line.
+         - Pizza Analogy: HTML steps with icons. Justification: Simplifies abstract TCO concept into concrete action.
+         - Traversal Tree: HTML Flex/Grid structure with JS class toggling. Justification: Visualizes the "Wide" vs "Deep" difference directly.
+         - NO SVG/Mermaid: All diagrams built with CSS borders and HTML elements.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-stone-50 text-slate-800 font-sans leading-relaxed">
+
+    <!-- Navigation / Header -->
+    <header class="bg-white shadow-sm border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">⚡</span>
+                <h1 class="text-xl font-bold text-slate-900 tracking-tight">Algo Lab: <span class="text-blue-600 font-medium">Iterative</span> vs <span class="text-rose-600 font-medium">Recursive</span></h1>
+            </div>
+            <div class="text-sm text-slate-500 hidden sm:block">Module 04 | Undergraduate CS</div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
+
+        <!-- Intro Section -->
+        <section class="max-w-4xl mx-auto text-center space-y-6">
+            <h2 class="text-4xl font-extrabold text-slate-900">Two Ways to Solve the Same Problem</h2>
+            <p class="text-lg text-slate-600">
+                You can solve a problem by breaking it into smaller pieces that call themselves (<strong>Recursion</strong>), or by repeating a block of code until finished (<strong>Iteration</strong>). They produce the same result, but their <strong>memory footprint</strong> is vastly different.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                <div class="p-6 bg-rose-50 border border-rose-100 rounded-xl">
+                    <h3 class="font-bold text-rose-700 text-lg mb-2">Recursion</h3>
+                    <p class="text-sm text-rose-800">Calls itself. Waits for answers. Builds a "Stack" of memory frames.</p>
+                </div>
+                <div class="p-6 bg-blue-50 border border-blue-100 rounded-xl">
+                    <h3 class="font-bold text-blue-700 text-lg mb-2">Iteration</h3>
+                    <p class="text-sm text-blue-800">Loops. Updates variables in place. Uses a single memory frame.</p>
+                </div>
+            </div>
+        </section>
+
+        <hr class="border-stone-200">
+
+        <!-- LAB 1: Memory Management -->
+        <section id="memory-lab" class="space-y-8">
+            <div class="space-y-4">
+                <div class="flex items-center space-x-3">
+                    <span class="bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded-full font-bold">1</span>
+                    <h2 class="text-2xl font-bold text-slate-900">The Stack Frame Battle</h2>
+                </div>
+                <p class="text-slate-600 max-w-3xl">
+                    Every time a recursive function calls itself, it creates a new <strong>Stack Frame</strong> (sticky note) in memory to store variables. Iteration, however, reuses the same frame. Use the simulator below to visualize how memory usage grows (O(n)) with recursion versus staying constant (O(1)) with iteration.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
+                <!-- Controls & Explanation -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-slate-800">Simulation Controls</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button id="btn-recurse" class="w-full py-3 bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold rounded-lg transition border border-rose-200 flex flex-col items-center">
+                                <span>+ Recursive Call</span>
+                                <span class="text-xs opacity-75 font-normal">Adds Stack Frame</span>
+                            </button>
+                            <button id="btn-iterate" class="w-full py-3 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold rounded-lg transition border border-blue-200 flex flex-col items-center">
+                                <span>↻ Next Iteration</span>
+                                <span class="text-xs opacity-75 font-normal">Updates Variable</span>
+                            </button>
+                        </div>
+                        <button id="btn-reset-mem" class="w-full py-2 bg-stone-100 hover:bg-stone-200 text-stone-600 text-sm font-medium rounded-lg transition">
+                            Reset Simulation
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 text-sm space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Recursive Frames:</span>
+                            <span id="stat-rec-count" class="font-mono font-bold text-rose-600">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Iterative Passes:</span>
+                            <span id="stat-iter-count" class="font-mono font-bold text-blue-600">0</span>
+                        </div>
+                        <div class="flex justify-between border-t border-slate-200 pt-2">
+                            <span class="text-slate-500">Est. Memory Risk:</span>
+                            <span id="stat-risk" class="font-bold text-emerald-600">Low</span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
+                        <h4 class="text-yellow-800 font-bold text-xs uppercase mb-1">Warning: Stack Overflow</h4>
+                        <p class="text-yellow-700 text-xs">
+                            If stack frames exceed available memory, the program crashes. Python limits this to ~1,000 calls.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Visualizer -->
+                <div class="lg:col-span-4 flex flex-col space-y-2">
+                    <h3 class="font-bold text-slate-800 text-center text-sm uppercase tracking-wide">System Memory (Stack)</h3>
+                    <!-- Stack Container -->
+                    <div class="relative flex-1 bg-stone-100 rounded-lg border-2 border-dashed border-stone-300 overflow-hidden flex flex-row h-96">
+                        <!-- Recursion Stack -->
+                        <div class="w-1/2 flex flex-col justify-end p-2 border-r border-stone-200">
+                            <div class="text-center text-xs text-rose-500 font-bold mb-2">Recursive Stack</div>
+                            <div id="stack-container-rec" class="stack-scroll w-full flex flex-col-reverse gap-1 overflow-y-auto max-h-full">
+                                <!-- JS will inject frames here -->
+                                <div class="w-full h-8 bg-rose-500/10 border border-rose-500 text-rose-700 text-xs flex items-center justify-center rounded">Main()</div>
+                            </div>
+                        </div>
+                        <!-- Iteration Frame -->
+                        <div class="w-1/2 flex flex-col justify-end p-2">
+                             <div class="text-center text-xs text-blue-500 font-bold mb-2">Iterative Context</div>
+                            <div class="h-full flex items-end">
+                                <div id="stack-container-iter" class="w-full h-24 bg-blue-500 border-2 border-blue-600 text-white text-sm font-bold flex flex-col items-center justify-center rounded shadow-lg transition-all duration-200">
+                                    <span>Variable: i</span>
+                                    <span id="iter-val" class="text-2xl">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="lg:col-span-4 flex flex-col">
+                    <h3 class="font-bold text-slate-800 text-center text-sm uppercase tracking-wide mb-2">Memory Growth (Big-O)</h3>
+                    <div class="chart-container bg-white rounded-lg">
+                        <canvas id="memoryChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-xs text-slate-500 text-center">
+                        <span class="inline-block w-3 h-3 bg-rose-500 rounded-full mr-1"></span> Recursion: O(n)
+                        <span class="inline-block w-3 h-3 bg-blue-500 rounded-full ml-3 mr-1"></span> Iteration: O(1)
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LAB 2: TCO -->
+        <section id="tco-lab" class="space-y-8">
+            <div class="space-y-4">
+                <div class="flex items-center space-x-3">
+                    <span class="bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded-full font-bold">2</span>
+                    <h2 class="text-2xl font-bold text-slate-900">Tail Call Optimization (TCO)</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2 text-slate-600">
+                        <p class="mb-4">
+                            Can we get the elegance of recursion with the memory safety of iteration? <strong>Yes, if the language supports TCO.</strong>
+                        </p>
+                        <p class="mb-4">
+                            A recursive call is a <strong>tail call</strong> if it is the <em>very last operation</em>. If so, the compiler can simply replace the current stack frame instead of making a new one, achieving <strong>O(1) memory</strong>.
+                        </p>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-sm">
+                        <h4 class="font-bold text-indigo-800 mb-2">The Golden Rule</h4>
+                        <p class="text-indigo-700 italic">"If there is no work left after the recursive call, the current frame is no longer needed."</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pizza Analogy Interactive -->
+            <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+                <div class="bg-slate-50 px-6 py-4 border-b border-stone-200 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800">Pizza Delivery Analogy</h3>
+                    <div class="flex bg-white rounded-lg p-1 border border-stone-200">
+                        <button onclick="setPizzaMode('regular')" id="btn-pizza-reg" class="px-4 py-1.5 text-sm font-medium rounded-md transition bg-rose-100 text-rose-700">Regular Recursion</button>
+                        <button onclick="setPizzaMode('tco')" id="btn-pizza-tco" class="px-4 py-1.5 text-sm font-medium rounded-md transition text-slate-500 hover:text-slate-900">Tail Recursion (TCO)</button>
+                    </div>
+                </div>
+                <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <!-- Animation Area -->
+                    <div class="relative h-64 bg-stone-100 rounded-xl border border-stone-200 flex items-center justify-center p-4">
+                        <!-- Locations -->
+                        <div class="absolute top-4 left-4 flex flex-col items-center">
+                            <span class="text-2xl">🍕</span>
+                            <span class="text-xs font-bold text-slate-600">Shop</span>
+                        </div>
+                        <div class="absolute top-4 right-4 flex flex-col items-center">
+                            <span class="text-2xl">🏠</span>
+                            <span class="text-xs font-bold text-slate-600">House 1</span>
+                        </div>
+                        <div class="absolute bottom-4 right-4 flex flex-col items-center">
+                            <span class="text-2xl">🏡</span>
+                            <span class="text-xs font-bold text-slate-600">House 2</span>
+                        </div>
+                         <div class="absolute bottom-4 left-4 flex flex-col items-center">
+                            <span class="text-2xl">🏢</span>
+                            <span class="text-xs font-bold text-slate-600">House 3</span>
+                        </div>
+
+                        <!-- Driver -->
+                        <div id="driver" class="absolute w-8 h-8 bg-slate-800 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-1000 z-10 top-4 left-4 shadow-xl">
+                            🛵
+                        </div>
+                        
+                        <!-- Path Description -->
+                        <div id="pizza-status" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/90 backdrop-blur px-4 py-2 rounded-lg shadow-sm text-sm font-medium text-center border border-stone-200">
+                            Waiting at Shop...
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="space-y-4">
+                        <h4 id="pizza-title" class="font-bold text-lg text-rose-700">Regular Recursion</h4>
+                        <ul id="pizza-steps" class="space-y-3 text-sm text-slate-600">
+                            <li class="flex items-start"><span class="mr-2">1.</span> Driver delivers to House 1 → Returns to Shop (Stack frame kept open).</li>
+                            <li class="flex items-start"><span class="mr-2">2.</span> Driver delivers to House 2 → Returns to Shop.</li>
+                            <li class="flex items-start"><span class="mr-2">3.</span> Driver delivers to House 3 → Returns to Shop.</li>
+                            <li class="font-semibold text-rose-600">Inefficient: Keeps returning to origin.</li>
+                        </ul>
+                        <button onclick="playPizzaAnimation()" class="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition shadow-lg shadow-slate-200">
+                            ▶ Play Delivery Route
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Language Support Table -->
+            <div class="overflow-hidden border border-stone-200 rounded-xl">
+                <table class="min-w-full divide-y divide-stone-200">
+                    <thead class="bg-stone-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Language</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">TCO Support</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-stone-200 text-sm">
+                        <tr>
+                            <td class="px-6 py-4 font-medium text-slate-900">Scheme / Haskell</td>
+                            <td class="px-6 py-4"><span class="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">Native</span></td>
+                            <td class="px-6 py-4 text-slate-500">Required by standard or natural to language.</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 font-medium text-slate-900">C / C++</td>
+                            <td class="px-6 py-4"><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">Compiler Opt</span></td>
+                            <td class="px-6 py-4 text-slate-500">Supported via optimization flags (GCC/Clang).</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 font-medium text-slate-900">JavaScript</td>
+                            <td class="px-6 py-4"><span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-bold">Rare</span></td>
+                            <td class="px-6 py-4 text-slate-500">In spec (ES6), but only Safari implements it (2025).</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 font-medium text-slate-900">Python / Java</td>
+                            <td class="px-6 py-4"><span class="px-2 py-1 bg-rose-100 text-rose-800 rounded-full text-xs font-bold">No Support</span></td>
+                            <td class="px-6 py-4 text-slate-500">Deliberate design choice or VM limitation.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- LAB 3: Traversal -->
+        <section id="traversal-lab" class="space-y-8">
+            <div class="space-y-4">
+                <div class="flex items-center space-x-3">
+                    <span class="bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded-full font-bold">3</span>
+                    <h2 class="text-2xl font-bold text-slate-900">System Traversal: DFS vs BFS</h2>
+                </div>
+                <p class="text-slate-600 max-w-3xl">
+                    When backing up files, should you go deep into one folder first (<strong>DFS</strong> - Stack/Recursion) or scan all top-level folders first (<strong>BFS</strong> - Queue/Iteration)?
+                </p>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-stone-200 grid grid-cols-1 lg:grid-cols-3 overflow-hidden">
+                <!-- Tree Visualizer -->
+                <div class="lg:col-span-2 p-8 bg-slate-50 border-r border-stone-200 relative min-h-[400px] flex items-center justify-center">
+                    
+                    <!-- Tree Structure (HTML Nodes) -->
+                    <div class="relative flex flex-col items-center w-full max-w-lg">
+                        
+                        <!-- Level 0 -->
+                        <div id="node-root" class="w-16 h-16 bg-white border-2 border-slate-300 rounded-lg flex items-center justify-center font-bold text-slate-700 shadow-sm z-10 transition-all duration-300">Root</div>
+                        
+                        <!-- Connector L0-L1 -->
+                        <div class="h-8 w-px bg-slate-300"></div>
+                        <div class="w-1/2 h-px bg-slate-300 relative">
+                            <div class="absolute left-0 h-4 w-px bg-slate-300 top-0"></div>
+                            <div class="absolute right-0 h-4 w-px bg-slate-300 top-0"></div>
+                        </div>
+
+                        <!-- Level 1 -->
+                        <div class="flex justify-between w-full mt-4">
+                            <!-- Branch A -->
+                            <div class="flex flex-col items-center w-1/2">
+                                <div id="node-A" class="w-12 h-12 bg-white border-2 border-slate-300 rounded flex items-center justify-center font-bold text-sm text-slate-600 shadow-sm z-10 transition-all duration-300">A</div>
+                                <!-- Connector A children -->
+                                <div class="h-4 w-px bg-slate-300"></div>
+                                <div class="w-3/4 h-px bg-slate-300 relative">
+                                    <div class="absolute left-0 h-4 w-px bg-slate-300 top-0"></div>
+                                    <div class="absolute right-0 h-4 w-px bg-slate-300 top-0"></div>
+                                </div>
+                                <div class="flex justify-between w-full mt-4 px-4">
+                                    <div id="node-A1" class="w-10 h-10 bg-white border border-slate-300 rounded flex items-center justify-center text-xs text-slate-500 shadow-sm z-10 transition-all duration-300">A1</div>
+                                    <div id="node-A2" class="w-10 h-10 bg-white border border-slate-300 rounded flex items-center justify-center text-xs text-slate-500 shadow-sm z-10 transition-all duration-300">A2</div>
+                                </div>
+                            </div>
+
+                            <!-- Branch B -->
+                            <div class="flex flex-col items-center w-1/2">
+                                <div id="node-B" class="w-12 h-12 bg-white border-2 border-slate-300 rounded flex items-center justify-center font-bold text-sm text-slate-600 shadow-sm z-10 transition-all duration-300">B</div>
+                                <div class="h-4 w-px bg-slate-300"></div>
+                                <div id="node-B1" class="w-10 h-10 bg-white border border-slate-300 rounded flex items-center justify-center text-xs text-slate-500 shadow-sm z-10 mt-4 transition-all duration-300">B1</div>
+                            </div>
+                        </div>
+
+                    </div>
+                    
+                    <div class="absolute top-4 left-4 text-xs font-mono text-slate-400">
+                        Status: <span id="traversal-status">Idle</span>
+                    </div>
+
+                </div>
+
+                <!-- Controls & Comparison -->
+                <div class="p-6 space-y-8 bg-white flex flex-col justify-center">
+                    <div>
+                        <h3 class="font-bold text-lg mb-4 text-slate-900">Select Strategy</h3>
+                        <div class="grid grid-cols-1 gap-4">
+                            <button onclick="runTraversal('DFS')" class="group p-4 border border-rose-200 bg-rose-50 hover:bg-rose-100 rounded-xl text-left transition relative overflow-hidden">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-rose-800">DFS (Depth-First)</span>
+                                    <span class="text-xs font-mono bg-white px-2 py-1 rounded border border-rose-200 text-rose-600">O(d) Memory</span>
+                                </div>
+                                <p class="text-xs text-rose-700">Goes deep first using a Stack. Good for full branch backups (rsync).</p>
+                            </button>
+
+                            <button onclick="runTraversal('BFS')" class="group p-4 border border-blue-200 bg-blue-50 hover:bg-blue-100 rounded-xl text-left transition relative overflow-hidden">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-blue-800">BFS (Breadth-First)</span>
+                                    <span class="text-xs font-mono bg-white px-2 py-1 rounded border border-blue-200 text-blue-600">O(w) Memory</span>
+                                </div>
+                                <p class="text-xs text-blue-700">Goes wide first using a Queue. Good for quick overview (robocopy).</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-stone-50 p-4 rounded-lg text-sm border border-stone-200">
+                        <h4 class="font-bold text-slate-800 mb-2">Visit Order Log:</h4>
+                        <div id="visit-log" class="font-mono text-xs text-slate-600 h-24 overflow-y-auto">
+                            Waiting for start...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Key Takeaways & Big O -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-slate-900 text-white p-8 rounded-2xl shadow-lg">
+                <h3 class="text-xl font-bold mb-6 flex items-center">
+                    <span class="mr-2">💡</span> Key Takeaways
+                </h3>
+                <ul class="space-y-4">
+                    <li class="flex items-start">
+                        <span class="bg-slate-700 p-1 rounded mr-3 mt-1 text-xs">1</span>
+                        <p class="text-slate-300 text-sm">Every recursive call costs a stack frame. Deep recursion = <strong>Stack Overflow</strong>.</p>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="bg-slate-700 p-1 rounded mr-3 mt-1 text-xs">2</span>
+                        <p class="text-slate-300 text-sm"><strong>Tail Call Optimization (TCO)</strong> can turn O(n) recursion into O(1) iteration, but language support varies.</p>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="bg-slate-700 p-1 rounded mr-3 mt-1 text-xs">3</span>
+                        <p class="text-slate-300 text-sm">Use <strong>DFS</strong> (Stack) for deep analysis. Use <strong>BFS</strong> (Queue) for wide scanning.</p>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="bg-white border border-stone-200 p-8 rounded-2xl shadow-sm">
+                <h3 class="text-xl font-bold mb-6 text-slate-900 flex items-center">
+                    <span class="mr-2">📊</span> Big-O Cheat Sheet
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-3 bg-blue-50 rounded-lg">
+                        <div class="font-mono text-lg font-bold text-blue-700">O(1)</div>
+                        <div class="text-xs text-blue-900 font-bold uppercase mt-1">Constant</div>
+                        <p class="text-xs text-blue-800 mt-1">Iterative Memory</p>
+                    </div>
+                    <div class="p-3 bg-rose-50 rounded-lg">
+                        <div class="font-mono text-lg font-bold text-rose-700">O(n)</div>
+                        <div class="text-xs text-rose-900 font-bold uppercase mt-1">Linear</div>
+                        <p class="text-xs text-rose-800 mt-1">Recursive Memory</p>
+                    </div>
+                    <div class="p-3 bg-purple-50 rounded-lg">
+                        <div class="font-mono text-lg font-bold text-purple-700">O(d)</div>
+                        <div class="text-xs text-purple-900 font-bold uppercase mt-1">Depth</div>
+                        <p class="text-xs text-purple-800 mt-1">DFS Memory</p>
+                    </div>
+                    <div class="p-3 bg-indigo-50 rounded-lg">
+                        <div class="font-mono text-lg font-bold text-indigo-700">O(w)</div>
+                        <div class="text-xs text-indigo-900 font-bold uppercase mt-1">Width</div>
+                        <p class="text-xs text-indigo-800 mt-1">BFS Memory</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center text-slate-400 text-xs py-8 border-t border-stone-100">
+            <p>&copy; Cyber.SoHo | Module 04 Algorithms</p>
+        </footer>
+
+    </main>
+
+    <script>
+        // --- LAB 1: MEMORY VISUALIZER LOGIC ---
+        
+        const stackContainerRec = document.getElementById('stack-container-rec');
+        const iterValDisplay = document.getElementById('iter-val');
+        const statRecCount = document.getElementById('stat-rec-count');
+        const statIterCount = document.getElementById('stat-iter-count');
+        const statRisk = document.getElementById('stat-risk');
+        
+        let recursiveCount = 0;
+        let iterativeCount = 0;
+        let chartInstance = null;
+
+        // Initialize Chart
+        function initChart() {
+            const ctx = document.getElementById('memoryChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [], // Iteration steps 1-20
+                    datasets: [
+                        {
+                            label: 'Recursive Memory (Frames)',
+                            data: [],
+                            borderColor: '#e11d48', // rose-600
+                            backgroundColor: '#e11d48',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 2
+                        },
+                        {
+                            label: 'Iterative Memory (Frames)',
+                            data: [],
+                            borderColor: '#2563eb', // blue-600
+                            backgroundColor: '#2563eb',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Memory Units' },
+                            suggestedMax: 10
+                        },
+                        x: {
+                            title: { display: true, text: 'Input Size (n)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // Add Recursive Frame
+        document.getElementById('btn-recurse').addEventListener('click', () => {
+            recursiveCount++;
+            
+            // Visual Stack
+            const frame = document.createElement('div');
+            frame.className = "w-full h-8 bg-rose-500 text-white text-xs flex items-center justify-center rounded shadow-sm border border-rose-600 animate-[fadeIn_0.2s_ease-out]";
+            frame.innerText = `Call(${recursiveCount})`;
+            stackContainerRec.appendChild(frame);
+            
+            // Auto-scroll to bottom of stack (which is actually top visually due to flex-col-reverse)
+            stackContainerRec.scrollTop = stackContainerRec.scrollHeight;
+
+            updateStats();
+        });
+
+        // Add Iterative Pass
+        document.getElementById('btn-iterate').addEventListener('click', () => {
+            iterativeCount++;
+            iterValDisplay.innerText = iterativeCount;
+            
+            // Visual Pulse
+            const container = document.getElementById('stack-container-iter');
+            container.classList.add('scale-105', 'bg-blue-600');
+            setTimeout(() => {
+                container.classList.remove('scale-105', 'bg-blue-600');
+            }, 100);
+
+            updateStats();
+        });
+
+        // Update Stats & Chart
+        function updateStats() {
+            statRecCount.innerText = recursiveCount;
+            statIterCount.innerText = iterativeCount;
+
+            // Update Risk Text
+            if (recursiveCount > 15) {
+                statRisk.innerText = "CRITICAL (Stack Overflow)";
+                statRisk.className = "font-bold text-rose-600";
+            } else if (recursiveCount > 8) {
+                statRisk.innerText = "Medium";
+                statRisk.className = "font-bold text-yellow-600";
+            } else {
+                statRisk.innerText = "Low";
+                statRisk.className = "font-bold text-emerald-600";
+            }
+
+            // Update Chart
+            const maxStep = Math.max(recursiveCount, iterativeCount);
+            const labels = Array.from({length: maxStep}, (_, i) => i + 1);
+            
+            const recData = Array.from({length: maxStep}, (_, i) => i + 1); // y = x
+            const iterData = Array.from({length: maxStep}, () => 1); // y = 1
+
+            chartInstance.data.labels = labels;
+            chartInstance.data.datasets[0].data = recData;
+            chartInstance.data.datasets[1].data = iterData;
+            chartInstance.update();
+        }
+
+        document.getElementById('btn-reset-mem').addEventListener('click', () => {
+            recursiveCount = 0;
+            iterativeCount = 0;
+            iterValDisplay.innerText = "0";
+            stackContainerRec.innerHTML = `<div class="w-full h-8 bg-rose-500/10 border border-rose-500 text-rose-700 text-xs flex items-center justify-center rounded">Main()</div>`;
+            updateStats();
+        });
+
+        // --- LAB 2: PIZZA TCO VISUALIZER ---
+
+        let pizzaMode = 'regular';
+        let isAnimatingPizza = false;
+        
+        const driver = document.getElementById('driver');
+        const pizzaStatus = document.getElementById('pizza-status');
+        const pizzaTitle = document.getElementById('pizza-title');
+        const pizzaSteps = document.getElementById('pizza-steps');
+
+        function setPizzaMode(mode) {
+            pizzaMode = mode;
+            // Update UI buttons
+            if (mode === 'regular') {
+                document.getElementById('btn-pizza-reg').className = "px-4 py-1.5 text-sm font-medium rounded-md transition bg-rose-100 text-rose-700";
+                document.getElementById('btn-pizza-tco').className = "px-4 py-1.5 text-sm font-medium rounded-md transition text-slate-500 hover:text-slate-900";
+                pizzaTitle.innerText = "Regular Recursion";
+                pizzaTitle.className = "font-bold text-lg text-rose-700";
+                pizzaSteps.innerHTML = `
+                    <li class="flex items-start"><span class="mr-2">1.</span> Driver delivers to House 1 → Returns to Shop.</li>
+                    <li class="flex items-start"><span class="mr-2">2.</span> Driver delivers to House 2 → Returns to Shop.</li>
+                    <li class="flex items-start"><span class="mr-2">3.</span> Driver delivers to House 3 → Returns to Shop.</li>
+                    <li class="font-semibold text-rose-600">Inefficient: Keeps returning to origin.</li>`;
+            } else {
+                document.getElementById('btn-pizza-tco').className = "px-4 py-1.5 text-sm font-medium rounded-md transition bg-emerald-100 text-emerald-700";
+                document.getElementById('btn-pizza-reg').className = "px-4 py-1.5 text-sm font-medium rounded-md transition text-slate-500 hover:text-slate-900";
+                pizzaTitle.innerText = "Tail Call Optimization";
+                pizzaTitle.className = "font-bold text-lg text-emerald-700";
+                pizzaSteps.innerHTML = `
+                    <li class="flex items-start"><span class="mr-2">1.</span> Driver delivers to House 1 → Goes DIRECT to House 2.</li>
+                    <li class="flex items-start"><span class="mr-2">2.</span> From House 2 → Goes DIRECT to House 3.</li>
+                    <li class="flex items-start"><span class="mr-2">3.</span> Only returns when ALL done.</li>
+                    <li class="font-semibold text-emerald-600">Efficient: Reuses the journey (Stack Frame).</li>`;
+            }
+            // Reset position
+            driver.style.top = '16px'; // 4 * 4px
+            driver.style.left = '16px';
+            pizzaStatus.innerText = "Ready at Shop";
+        }
+
+        async function playPizzaAnimation() {
+            if (isAnimatingPizza) return;
+            isAnimatingPizza = true;
+
+            // Coordinates (Tailwind spacing approx: top-4=16px, right-4=16px, etc relative to 256px container)
+            // Shop: 16, 16
+            // H1 (TR): 16, calc(100% - 48px)
+            // H2 (BR): calc(100% - 48px), calc(100% - 48px)
+            // H3 (BL): calc(100% - 48px), 16
+
+            const shop = { top: '16px', left: '16px' };
+            const h1 = { top: '16px', left: 'calc(100% - 48px)' }; // top right
+            const h2 = { top: 'calc(100% - 48px)', left: 'calc(100% - 48px)' }; // bottom right
+            const h3 = { top: 'calc(100% - 48px)', left: '16px' }; // bottom left
+
+            const move = (loc, text, delay) => {
+                return new Promise(resolve => {
+                    pizzaStatus.innerText = text;
+                    driver.style.top = loc.top;
+                    driver.style.left = loc.left;
+                    setTimeout(resolve, delay);
+                });
+            };
+
+            if (pizzaMode === 'regular') {
+                await move(h1, "Delivering to H1...", 1000);
+                await move(shop, "Returning to Shop (Stack Pop)", 1000);
+                await move(h2, "Delivering to H2...", 1000);
+                await move(shop, "Returning to Shop (Stack Pop)", 1000);
+                await move(h3, "Delivering to H3...", 1000);
+                await move(shop, "Done! (Final Return)", 1000);
+            } else {
+                await move(h1, "Delivering to H1...", 1000);
+                await move(h2, "Direct to H2 (Reuse Frame)...", 1000);
+                await move(h3, "Direct to H3 (Reuse Frame)...", 1000);
+                await move(shop, "All Done! Return.", 1000);
+            }
+
+            isAnimatingPizza = false;
+        }
+
+        // --- LAB 3: TRAVERSAL LOGIC ---
+
+        const nodes = {
+            'root': document.getElementById('node-root'),
+            'A': document.getElementById('node-A'),
+            'B': document.getElementById('node-B'),
+            'A1': document.getElementById('node-A1'),
+            'A2': document.getElementById('node-A2'),
+            'B1': document.getElementById('node-B1')
+        };
+        const traversalStatus = document.getElementById('traversal-status');
+        const visitLog = document.getElementById('visit-log');
+        let isTraversing = false;
+
+        async function runTraversal(type) {
+            if (isTraversing) return;
+            isTraversing = true;
+            
+            // Reset visual state
+            Object.values(nodes).forEach(n => n.className = n.className.replace('node-active', '').replace('node-visited', ''));
+            visitLog.innerHTML = "";
+
+            // Define Orders
+            // DFS: Pre-order (Root -> Left -> LeftChildren -> Right -> RightChildren)
+            // BFS: Level-order (Root -> L1 Nodes -> L2 Nodes)
+            
+            // Tree: Root -> A (A1, A2), B (B1)
+            const dfsOrder = ['root', 'A', 'A1', 'A2', 'B', 'B1'];
+            const bfsOrder = ['root', 'A', 'B', 'A1', 'A2', 'B1'];
+            
+            const sequence = type === 'DFS' ? dfsOrder : bfsOrder;
+            traversalStatus.innerText = `Running ${type}...`;
+
+            for (let id of sequence) {
+                const el = nodes[id];
+                
+                // Active State
+                el.classList.add('node-active');
+                visitLog.innerHTML += `> Visiting: ${id}\n`;
+                visitLog.scrollTop = visitLog.scrollHeight;
+                
+                await new Promise(r => setTimeout(r, 800));
+                
+                // Visited State
+                el.classList.remove('node-active');
+                el.classList.add('node-visited');
+            }
+
+            traversalStatus.innerText = `${type} Complete`;
+            isTraversing = false;
+        }
+
+        // Init
+        initChart();
+        updateStats();
+
+    </script>
+</body>
+</html>
+
+
