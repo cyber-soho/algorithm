@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Strategies: Brute-Force Study App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Flashcard Flip Animation Styles */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        .transition-transform-600 {
+            transition: transform 0.6s;
+        }
+        
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+
+    <div class="max-w-4xl mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900 mb-2">Algorithm Strategies: Brute-Force</h1>
+            <p class="text-slate-500">Interactive Study Material & Application Quiz</p>
+        </header>
+
+        <!-- Tabs -->
+        <div class="flex justify-center space-x-4 mb-8">
+            <button id="tab-flashcards" onclick="switchTab('flashcards')" class="px-6 py-3 rounded-lg font-semibold transition-colors duration-200 bg-blue-600 text-white shadow-md hover:bg-blue-700">
+                Flashcards
+            </button>
+            <button id="tab-quiz" onclick="switchTab('quiz')" class="px-6 py-3 rounded-lg font-semibold transition-colors duration-200 bg-white text-slate-600 shadow border border-slate-200 hover:bg-slate-100">
+                Application Quiz
+            </button>
+        </div>
+
+        <!-- Flashcards View -->
+        <div id="view-flashcards" class="block">
+            <div class="bg-white p-6 md:p-10 rounded-2xl shadow-lg border border-slate-100 flex flex-col items-center">
+                
+                <div class="text-sm font-medium text-slate-400 mb-4 tracking-wide uppercase" id="fc-counter">Card 1 of 25</div>
+
+                <!-- Card Container -->
+                <div class="w-full max-w-2xl h-64 md:h-80 perspective-1000 cursor-pointer" onclick="flipCard()">
+                    <div id="fc-inner" class="relative w-full h-full transform-style-3d transition-transform-600">
+                        
+                        <!-- Front of Card -->
+                        <div class="absolute w-full h-full backface-hidden bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 rounded-xl flex items-center justify-center p-8 text-center shadow-inner">
+                            <h2 id="fc-front" class="text-2xl md:text-3xl font-bold text-slate-800">Front Text</h2>
+                        </div>
+                        
+                        <!-- Back of Card -->
+                        <div class="absolute w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-xl flex items-center justify-center p-8 text-center shadow-lg">
+                            <p id="fc-back" class="text-xl md:text-2xl font-medium leading-relaxed">Back Text</p>
+                        </div>
+                        
+                    </div>
+                </div>
+
+                <div class="text-sm text-slate-400 mt-4 mb-8 italic">Click the card to flip</div>
+
+                <!-- Controls -->
+                <div class="flex space-x-4 w-full max-w-2xl justify-between items-center">
+                    <button onclick="prevCard()" class="flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition font-medium">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        Previous
+                    </button>
+                    
+                    <button onclick="flipCard()" class="px-6 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition font-bold shadow-sm">
+                        Flip Card
+                    </button>
+                    
+                    <button onclick="nextCard()" class="flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition font-medium">
+                        Next
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz View -->
+        <div id="view-quiz" class="hidden">
+            <div id="quiz-container" class="space-y-8">
+                <!-- Quiz questions will be injected here by JS -->
+            </div>
+            
+            <div id="quiz-results" class="hidden mt-8 bg-green-50 border border-green-200 rounded-xl p-6 text-center shadow-sm">
+                <h3 class="text-2xl font-bold text-green-800 mb-2">Quiz Completed!</h3>
+                <p class="text-lg text-green-700" id="quiz-score">You scored 0 out of 10.</p>
+                <button onclick="resetQuiz()" class="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">Retry Quiz</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA --- //
+        const flashcards = [
+            { front: "Brute-force algorithm", back: "A straightforward strategy that systematically checks every possible candidate solution until a satisfactory one is found." },
+            { front: "Three core properties of a brute-force algorithm", back: "Complete (examines every candidate), Correct (guaranteed), and Simple (trivial to implement)." },
+            { front: "Alternative name for Exhaustive Search", back: "Generate and Test." },
+            { front: "Four situations where brute-force is appropriate", back: "Small problem sizes, safety-critical systems, as a baseline for comparison, and when no better algorithm is known." },
+            { front: "Big-O notation for linear growth", back: "O(n)" },
+            { front: "Big-O notation for quadratic growth", back: "O(n²)" },
+            { front: "Big-O notation for exponential growth", back: "O(2ⁿ)" },
+            { front: "Big-O notation for factorial growth", back: "O(n!)" },
+            { front: "Fundamental limitation of brute-force algorithms", back: "The explosive growth of required time and computation as the search space increases." },
+            { front: "Time complexity of an exhaustive search on n items", back: "O(n)" },
+            { front: "Formula for calculating total password combinations", back: "Character Set Size raised to the power of Password Length." },
+            { front: "Character set size for Full ASCII", back: "95 characters." },
+            { front: "Reason attackers use brute-force against password hashes", back: "Hash functions are one-way transformations and cannot be mathematically reversed." },
+            { front: "Primary defense principle against password brute-force", back: "Length + Complexity + Uniqueness." },
+            { front: "Account Lockout Policy", back: "A defense mechanism that blocks online brute-force attacks by locking an account after 3 to 5 failed login attempts." },
+            { front: "Rate Limiting", back: "A defense mechanism that restricts guess attempts to a certain number per second, making brute-force impractically slow." },
+            { front: "CAPTCHA", back: "A challenge-response test that forces proof of human identity to block automated brute-force scripts." },
+            { front: "Salted Hashing", back: "Adding a random value to a password before hashing to defeat pre-computed rainbow tables." },
+            { front: "Multi-Factor Authentication (MFA)", back: "Requiring a second physical token or app, making a cracked password useless on its own." },
+            { front: "Total number of available network ports", back: "65,535" },
+            { front: "Port Scanning", back: "Probing a target computer to discover which ports are open and what services are running." },
+            { front: "Three potential states of a scanned port", back: "Open (service listening), Closed (nothing listening), and Filtered (firewall blocking)." },
+            { front: "TCP Full Connect Scan", back: "A brute-force port scanning approach that attempts a full connection on every port sequentially." },
+            { front: "Key indicators of a brute-force port scan", back: "Rapid connection attempts, sequential port numbers, many failed connections, and a single source IP." },
+            { front: "Computer Fraud and Abuse Act (CFAA)", back: "United States legislation that makes unauthorized network scanning and access a criminal offense." }
+        ];
+
+        const quizData = [
+            {
+                question: "A software engineer is designing a medical dosing system where finding the exact correct dosage from a small list of 500 possibilities is absolutely critical, but processing power is abundant. Why might they choose a brute-force approach here over a faster, heuristic algorithm?",
+                hint: "Consider the core guarantees provided by the 'try everything' algorithmic pattern.",
+                options: [
+                    { text: "It guarantees finding the valid answer if it exists in the search space.", rationale: "The exhaustive nature of the algorithm ensures no possibilities are missed, making it ideal for safety-critical systems where absolute accuracy overrides speed.", isCorrect: true },
+                    { text: "It automatically skips over unsafe dosage values during the search.", rationale: "The fundamental pattern of this strategy checks every option indiscriminately, lacking any heuristic logic to skip specific candidates.", isCorrect: false },
+                    { text: "It executes in constant time regardless of the input size.", rationale: "Exhaustive searches depend entirely on the size of the search space, scaling up in a linear or polynomial fashion as the input grows.", isCorrect: false },
+                    { text: "It requires less system memory than linear search algorithms.", rationale: "An exhaustive search over a list is essentially a linear search, meaning it does not offer a structural memory advantage over the category it belongs to.", isCorrect: false }
+                ]
+            },
+            {
+                question: "An analyst is cracking a 4-dial combination lock, taking an average of 1 second per guess. They know the absolute maximum time it will take is about 2.8 hours (10,000 seconds). If the lock is upgraded to 5 dials, what is the new maximum time to crack it assuming the same guess rate?",
+                hint: "Remember how the search space expands with each additional variable in a combinatorial problem using base-10 digits.",
+                options: [
+                    { text: "About 27.8 hours.", rationale: "Each additional dial multiplies the total search space by 10, meaning 100,000 total seconds are required to check every combination.", isCorrect: true },
+                    { text: "About 5.6 hours.", rationale: "Adding a dial does not simply double the time; it exponentially increases the number of combinations that must be evaluated.", isCorrect: false },
+                    { text: "About 11.6 days.", rationale: "This calculation represents the maximum time required if the lock were upgraded to 6 dials, representing a search space of 1,000,000 combinations.", isCorrect: false },
+                    { text: "About 3.2 years.", rationale: "This immense timeframe applies to an 8-dial lock, highlighting how rapidly the search space explodes beyond a few variables.", isCorrect: false }
+                ]
+            },
+            {
+                question: "An attacker has stolen a database of user credentials. What is the precise mechanism they use to discover the original passwords using an offline brute-force approach?",
+                hint: "The attacker cannot simply 'decode' the stolen data; they must work forward from a guess.",
+                options: [
+                    { text: "They generate candidate passwords, apply a one-way transformation, and compare the results to the stolen database.", rationale: "Because standard cryptographic storage cannot be reversed mathematically, the attacker must systematically guess, hash, and check for a match.", isCorrect: true },
+                    { text: "They reverse the hashing algorithm using a mathematical inverse function to reveal the plaintext.", rationale: "Secure storage functions are fundamentally designed to be one-way, meaning they inherently lack a mathematical inverse to decode the data.", isCorrect: false },
+                    { text: "They intercept the TCP full connection traffic between the database and the web server to capture plaintext.", rationale: "This describes a live network interception attack, which is a different technique than cracking an offline database of credentials.", isCorrect: false },
+                    { text: "They inject sequential character strings directly into the live login portal until access is granted.", rationale: "This action describes an online credential stuffing or live brute-force attack, rather than processing an already stolen database.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A company mandates that employee passwords must be exactly 8 characters long and use only lowercase letters. A security consultant recommends allowing a mix of uppercase and lowercase letters, but keeping the length at 8. How does this affect the search space?",
+                hint: "Compare the mathematical formula 26^8 to the formula 52^8 to understand the magnitude of the change.",
+                options: [
+                    { text: "The search space grows significantly because the base character set size doubles from 26 to 52.", rationale: "The mathematical formula for total combinations raises the character set size to the power of the length, so expanding the base dramatically increases total possibilities.", isCorrect: true },
+                    { text: "The search space remains roughly the same because the overall password length is unchanged.", rationale: "The character set size acts as the base of the exponent in the combination formula, meaning any increase fundamentally alters the total count.", isCorrect: false },
+                    { text: "The search space simply doubles because the number of character types (lower and upper) has doubled.", rationale: "While the base character types double, the exponent applied to the base causes the total search space to multiply by 256, not just 2.", isCorrect: false },
+                    { text: "The search space decreases slightly because uppercase letters are processed faster by hash functions.", rationale: "Hash functions apply complex mathematical transformations that require the same computational effort regardless of the capitalization of a character.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A web server is experiencing millions of login attempts per hour from various IP addresses, but all attempts are failing. To protect the system without permanently blocking legitimate users who might occasionally forget their passwords, which defense mechanism is most mathematically effective against this attack speed?",
+                hint: "Think about how to disrupt the attacker's ability to check thousands of candidates quickly while allowing slow, human-paced attempts.",
+                options: [
+                    { text: "Rate Limiting.", rationale: "Restricting guess attempts to a small number per second mathematically forces the brute-force completion time into centuries while allowing humans normal access.", isCorrect: true },
+                    { text: "Account Lockout Policies.", rationale: "Locking the account after a few attempts would successfully stop the attacker, but it would also continuously lock out genuine users targeted by the attack.", isCorrect: false },
+                    { text: "Salted Hashing.", rationale: "Adding random data to hashes protects stolen databases from pre-computed tables, but it does not slow down live attempts against a login portal.", isCorrect: false },
+                    { text: "Network Port Filtering.", rationale: "Closing the port entirely would definitely stop the attack, but it would also take the login portal offline for legitimate users.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A network administrator notices that a server's log shows connection attempts to ports 21, 22, 23, 24, and 25 within a single millisecond from a single external IP address. What does this distinct traffic pattern strongly indicate?",
+                hint: "Consider the typical behavior of standard applications compared to systematic reconnaissance.",
+                options: [
+                    { text: "A sequential brute-force TCP full connect scan.", rationale: "Rapid, numerically ordered connection attempts from a single source are the hallmark signature of an attacker running an exhaustive search for open services.", isCorrect: true },
+                    { text: "A legitimate user attempting to download multiple large files simultaneously.", rationale: "Standard file downloads typically establish a few concurrent connections to a single service port, not a rapid sweep across different administrative ports.", isCorrect: false },
+                    { text: "An internal DNS server updating its routing tables.", rationale: "DNS updates utilize specific protocols and assigned ports, rather than sequentially knocking on multiple unassociated ports from an external address.", isCorrect: false },
+                    { text: "An attacker successfully retrieving a database of salted password hashes.", rationale: "Data exfiltration involves pulling large amounts of data through an already established connection, rather than rapidly attempting to open new, closed connections.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A security team discovers that their database of hashed passwords has been stolen. Despite this, the attacker is struggling to crack even common passwords using pre-computed 'rainbow tables.' What specific defense mechanism did the security team likely implement before the breach?",
+                hint: "This mechanism introduces unique, random data to the plaintext before the mathematical transformation occurs.",
+                options: [
+                    { text: "Salted Hashing.", rationale: "Appending a unique random value before hashing ensures that two users with the exact same password will generate completely different hashes, destroying the utility of pre-computed tables.", isCorrect: true },
+                    { text: "Multi-Factor Authentication (MFA).", rationale: "Requiring a second physical token protects live logins, but it does not alter the underlying cryptographic structure of a stolen database file.", isCorrect: false },
+                    { text: "Account Lockout Policies.", rationale: "Halting live, online guessing attempts is highly effective for web portals, but it offers zero protection once a database file has been copied offline.", isCorrect: false },
+                    { text: "Intrusion Prevention Systems (IPS).", rationale: "Network monitoring tools watch for suspicious traffic patterns across ports, but they cannot secure cryptographic data once it has been exfiltrated from the network.", isCorrect: false }
+                ]
+            },
+            {
+                question: "An algorithm tests all possible pairs of nodes in a network to find the shortest path, leading to a time complexity of O(n²). If the network size doubles from 1,000 to 2,000 nodes, what happens to the required computation time?",
+                hint: "Quadratic growth means the output scales by the square of the multiplier applied to the input.",
+                options: [
+                    { text: "It quadruples.", rationale: "In a quadratic mathematical relationship, multiplying the input size by two results in the computation time increasing by two squared, or four times the original duration.", isCorrect: true },
+                    { text: "It doubles.", rationale: "A linear relationship would cause the output to scale evenly alongside the input, but evaluating pairs requires checking each new node against all existing and future nodes.", isCorrect: false },
+                    { text: "It increases exponentially.", rationale: "Exponential growth occurs when the input size itself is in the exponent position, whereas this specific scenario involves a base raised to a fixed constant of two.", isCorrect: false },
+                    { text: "It remains constant.", rationale: "Constant time implies the operation takes the same duration regardless of size, which contradicts the fundamental necessity of checking millions of additional node pairings.", isCorrect: false }
+                ]
+            },
+            {
+                question: "As part of a university project, a computer science student uses Nmap to run a sequential port scan on a local bank's public-facing web server to 'see how their security works.' The student does not attempt to log in or steal data. According to industry standards and legislation like the CFAA, how is this action classified?",
+                hint: "Think about the concept of 'Rules of Engagement' and system ownership in the cybersecurity field.",
+                options: [
+                    { text: "It is an illegal act because scanning systems without written authorization is a criminal offense.", rationale: "Legislation such as the Computer Fraud and Abuse Act strictly prohibits unauthorized probing of networks, treating unpermitted reconnaissance as a cybercrime regardless of intent.", isCorrect: true },
+                    { text: "It is legal because port scanning only identifies listening services and does not involve data exfiltration.", rationale: "Identifying open ports constitutes active reconnaissance and interaction with a target system, which violates legal boundaries when performed without explicit permission.", isCorrect: false },
+                    { text: "It is a legitimate educational exercise as long as the student uses an open-source tool like Nmap.", rationale: "The software or tools utilized do not dictate legality; applying any security tool to an unauthorized target is a violation of cyber laws.", isCorrect: false },
+                    { text: "It is considered a defensive measure since the student is identifying vulnerabilities to report them later.", rationale: "Defensive operations and audits strictly require verifiable ownership or prior written permission, making unauthorized scanning illegal rather than helpful.", isCorrect: false }
+                ]
+            },
+            {
+                question: "When attempting to find the absolute cheapest item in an unsorted database of millions of records, an exhaustive search guarantees finding the correct price. What is the fundamental trade-off of relying on this guarantee?",
+                hint: "Evaluate the relationship between the completeness of the search and the required computing resources.",
+                options: [
+                    { text: "The time required scales linearly, meaning every single record must be individually processed.", rationale: "To maintain the guarantee of absolute correctness in an unsorted dataset, the algorithm cannot take shortcuts and must expend computational time checking every single entry.", isCorrect: true },
+                    { text: "The algorithm requires complex heuristic logic to determine which records to skip safely.", rationale: "Brute-force strategies are defined by their simplicity and lack of assumptions, explicitly avoiding any complex logic or skipping mechanisms.", isCorrect: false },
+                    { text: "The search space grows exponentially as the number of records increases.", rationale: "Checking individual records in a single list represents linear growth, whereas exponential growth occurs in combinatorial problems like password guessing.", isCorrect: false },
+                    { text: "The algorithm runs the risk of returning an incorrect result if the database contains duplicate prices.", rationale: "An exhaustive search evaluates every item against the condition, meaning duplicates simply update or maintain the lowest found value without breaking the algorithmic guarantee.", isCorrect: false }
+                ]
+            }
+        ];
+
+        // --- APP LOGIC --- //
+
+        // Tab Switching
+        function switchTab(tabId) {
+            const fcTab = document.getElementById('tab-flashcards');
+            const qzTab = document.getElementById('tab-quiz');
+            const fcView = document.getElementById('view-flashcards');
+            const qzView = document.getElementById('view-quiz');
+
+            if (tabId === 'flashcards') {
+                fcTab.className = "px-6 py-3 rounded-lg font-semibold transition-colors duration-200 bg-blue-600 text-white shadow-md hover:bg-blue-700";
+                qzTab.className = "px-6 py-3 rounded-lg font-semibold transition-colors duration-200 bg-white text-slate-600 shadow border border-slate-200 hover:bg-slate-100";
+                fcView.classList.remove('hidden');
+                qzView.classList.add('hidden');
+            } else {
+                qzTab.className = "px-6 py-3 rounded-lg font-semibold transition-colors duration-200 bg-blue-600 text-white shadow-md hover:bg-blue-700";
+                fcTab.className = "px-6 py-3 rounded-lg font-semibold transition-colors duration-200 bg-white text-slate-600 shadow border border-slate-200 hover:bg-slate-100";
+                qzView.classList.remove('hidden');
+                fcView.classList.add('hidden');
+            }
+        }
+
+        // Flashcard Logic
+        let currentCardIndex = 0;
+        let isFlipped = false;
+
+        function renderFlashcard() {
+            const frontEl = document.getElementById('fc-front');
+            const backEl = document.getElementById('fc-back');
+            const counterEl = document.getElementById('fc-counter');
+            const innerEl = document.getElementById('fc-inner');
+
+            // Reset flip state if needed without animation before changing text
+            if (isFlipped) {
+                innerEl.classList.remove('transition-transform-600');
+                innerEl.classList.remove('rotate-y-180');
+                isFlipped = false;
+                
+                // Allow browser to render the reset before adding transition back
+                setTimeout(() => {
+                    innerEl.classList.add('transition-transform-600');
+                    updateContent();
+                }, 50);
+            } else {
+                updateContent();
+            }
+
+            function updateContent() {
+                frontEl.innerText = flashcards[currentCardIndex].front;
+                backEl.innerText = flashcards[currentCardIndex].back;
+                counterEl.innerText = `Card ${currentCardIndex + 1} of ${flashcards.length}`;
+            }
+        }
+
+        function flipCard() {
+            const innerEl = document.getElementById('fc-inner');
+            if (isFlipped) {
+                innerEl.classList.remove('rotate-y-180');
+            } else {
+                innerEl.classList.add('rotate-y-180');
+            }
+            isFlipped = !isFlipped;
+        }
+
+        function nextCard() {
+            currentCardIndex = (currentCardIndex + 1) % flashcards.length;
+            renderFlashcard();
+        }
+
+        function prevCard() {
+            currentCardIndex = (currentCardIndex - 1 + flashcards.length) % flashcards.length;
+            renderFlashcard();
+        }
+
+        // Quiz Logic
+        let quizState = new Array(quizData.length).fill(false);
+        let score = 0;
+
+        function buildQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = ''; // Clear existing
+
+            quizData.forEach((q, qIndex) => {
+                const questionCard = document.createElement('div');
+                questionCard.className = "bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200";
+                
+                // Question Header
+                const header = document.createElement('div');
+                header.className = "mb-4";
+                header.innerHTML = `
+                    <span class="text-xs font-bold bg-blue-100 text-blue-800 px-3 py-1 rounded-full uppercase tracking-wider">Question ${qIndex + 1}</span>
+                    <h3 class="text-xl font-bold text-slate-800 mt-4">${q.question}</h3>
+                `;
+                
+                // Hint Toggle
+                const hintContainer = document.createElement('div');
+                hintContainer.className = "mb-6";
+                hintContainer.innerHTML = `
+                    <button onclick="toggleHint(${qIndex})" class="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Show Hint
+                    </button>
+                    <p id="hint-${qIndex}" class="hidden mt-2 text-sm text-slate-500 italic bg-slate-50 p-3 rounded-lg border border-slate-100">${q.hint}</p>
+                `;
+
+                // Options Container
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = "space-y-3";
+                optionsContainer.id = `options-${qIndex}`;
+
+                q.options.forEach((opt, optIndex) => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-4 rounded-xl border-2 border-slate-100 hover:border-blue-300 hover:bg-blue-50 transition-all text-slate-700 font-medium";
+                    btn.innerText = opt.text;
+                    btn.onclick = () => selectOption(qIndex, optIndex, btn);
+                    optionsContainer.appendChild(btn);
+                });
+
+                // Rationale Container (Hidden initially)
+                const rationaleContainer = document.createElement('div');
+                rationaleContainer.id = `rationale-${qIndex}`;
+                rationaleContainer.className = "hidden mt-6 p-4 rounded-xl text-sm leading-relaxed";
+
+                questionCard.appendChild(header);
+                questionCard.appendChild(hintContainer);
+                questionCard.appendChild(optionsContainer);
+                questionCard.appendChild(rationaleContainer);
+                container.appendChild(questionCard);
+            });
+        }
+
+        function toggleHint(qIndex) {
+            const hintEl = document.getElementById(`hint-${qIndex}`);
+            hintEl.classList.toggle('hidden');
+        }
+
+        function selectOption(qIndex, optIndex, selectedBtn) {
+            if (quizState[qIndex]) return; // Prevent multiple answers per question
+            quizState[qIndex] = true;
+
+            const q = quizData[qIndex];
+            const isCorrect = q.options[optIndex].isCorrect;
+            const optionsContainer = document.getElementById(`options-${qIndex}`);
+            const buttons = optionsContainer.querySelectorAll('button');
+            const rationaleContainer = document.getElementById(`rationale-${qIndex}`);
+
+            // Update Score
+            if (isCorrect) score++;
+
+            // Style buttons based on correctness
+            buttons.forEach((btn, i) => {
+                btn.disabled = true;
+                btn.classList.remove('hover:border-blue-300', 'hover:bg-blue-50', 'cursor-pointer');
+                
+                if (q.options[i].isCorrect) {
+                    // Always highlight the correct answer
+                    btn.classList.replace('border-slate-100', 'border-green-500');
+                    btn.classList.add('bg-green-50', 'text-green-800');
+                } else if (i === optIndex && !isCorrect) {
+                    // Highlight selected incorrect answer
+                    btn.classList.replace('border-slate-100', 'border-red-400');
+                    btn.classList.add('bg-red-50', 'text-red-800');
+                } else {
+                    // Fade out unselected incorrect answers
+                    btn.classList.add('opacity-50');
+                }
+            });
+
+            // Show Rationale
+            rationaleContainer.classList.remove('hidden');
+            if (isCorrect) {
+                rationaleContainer.classList.add('bg-green-100', 'text-green-900', 'border', 'border-green-200');
+                rationaleContainer.innerHTML = `<strong>Correct!</strong> ${q.options[optIndex].rationale}`;
+            } else {
+                rationaleContainer.classList.add('bg-red-100', 'text-red-900', 'border', 'border-red-200');
+                rationaleContainer.innerHTML = `<strong>Incorrect.</strong> ${q.options[optIndex].rationale}`;
+            }
+
+            checkCompletion();
+        }
+
+        function checkCompletion() {
+            if (quizState.every(answered => answered === true)) {
+                const resultsEl = document.getElementById('quiz-results');
+                const scoreEl = document.getElementById('quiz-score');
+                resultsEl.classList.remove('hidden');
+                scoreEl.innerText = `You scored ${score} out of ${quizData.length}.`;
+                
+                // Scroll to results
+                setTimeout(() => {
+                    resultsEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 300);
+            }
+        }
+
+        function resetQuiz() {
+            quizState = new Array(quizData.length).fill(false);
+            score = 0;
+            document.getElementById('quiz-results').classList.add('hidden');
+            buildQuiz();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Initialize App
+        window.onload = () => {
+            renderFlashcard();
+            buildQuiz();
+        };
+
+    </script>
+</body>
+</html>
+
+
+
+

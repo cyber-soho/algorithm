@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Strategies: Brute-Force | Interactive Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutrals with Amber and Navy Accents (bg-stone-50, text-stone-800, accent-amber-600, accent-sky-700) -->
+    <!-- Application Structure Plan: The application is structured as a scrolling, interactive educational module, transitioning from abstract concepts to concrete cybersecurity applications. It uses a single-page layout with sticky navigation to allow students to digest the 'lessons' sequentially or jump to specific topics. This structure mirrors the progressive learning path of an undergraduate lecture—starting with definitions, moving to Big-O theory, and culminating in real-world simulations (Password Cracking and Port Scanning)—maximizing user comprehension through guided exploration. -->
+    <!-- Visualization & Content Choices: 
+         1. Big-O Growth (Inform/Compare) -> Chart.js Line Chart -> Hover tooltips -> Justification: Visually demonstrates the 'scaling problem' of brute-force vs input size. Uses Canvas API.
+         2. Coffee Shop Search (Inform/Process) -> HTML/JS Interactive Grid -> Click to 'search' -> Justification: Makes the O(n) linear exhaustive search tangible. Uses DOM manipulation.
+         3. Password Search Space (Compare/Change) -> Chart.js Bar Chart (Logarithmic) & Sliders -> Adjust length to see exponential growth -> Justification: Effectively shows the massive difference between 4-digit PINs and 8-char complex passwords. Uses Canvas API.
+         4. Port Scanner Simulation (Inform/Change) -> HTML Grid Animation -> Click 'Start Scan' to see sequential checking and IDS trigger -> Justification: Simulates network traffic patterns and defensive alerts without complex backend logic. Uses DOM manipulation.
+         Confirming: NO SVG or Mermaid JS used. All visual assets are HTML/CSS/Tailwind, Canvas, or Unicode. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        .dial-window {
+            box-shadow: inset 0px 4px 10px rgba(0,0,0,0.1);
+        }
+        @keyframes pulse-red {
+            0%, 100% { background-color: #fee2e2; border-color: #ef4444; }
+            50% { background-color: #fca5a5; border-color: #b91c1c; }
+        }
+        .ids-alert {
+            animation: pulse-red 1s infinite;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 font-sans antialiased selection:bg-amber-200">
+
+    <nav class="sticky top-0 z-50 bg-stone-100/90 backdrop-blur-md border-b border-stone-200 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center font-bold text-xl tracking-tight text-sky-800">
+                    <span class="mr-2">&#128187;</span> CS Algorithms: Brute-Force
+                </div>
+                <div class="hidden md:flex space-x-8 text-sm font-medium text-stone-600">
+                    <a href="#intro" class="hover:text-sky-700 transition-colors">Core Concept</a>
+                    <a href="#lesson1" class="hover:text-sky-700 transition-colors">Exhaustive Search</a>
+                    <a href="#lesson2" class="hover:text-sky-700 transition-colors">Password Cracking</a>
+                    <a href="#lesson3" class="hover:text-sky-700 transition-colors">Network Scanning</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="max-w-4xl mx-auto pt-16 pb-12 px-4 sm:px-6 text-center">
+        <p class="text-amber-600 font-semibold tracking-wider uppercase text-sm mb-2">Week 06 &mdash; Module 05</p>
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-stone-900 tracking-tight mb-4">Algorithm Strategies: Brute-Force</h1>
+        <p class="text-xl text-stone-600 max-w-2xl mx-auto italic border-l-4 border-amber-400 pl-4 py-1 text-left">
+            "When in doubt, use brute force." <br><span class="text-sm text-stone-500 font-normal">&mdash; Ken Thompson, co-creator of Unix</span>
+        </p>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 space-y-24">
+
+        <section id="intro" class="scroll-mt-24">
+            <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 sm:p-10">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <h2 class="text-3xl font-bold text-stone-900 mb-6">What is Brute-Force?</h2>
+                        <p class="text-lg text-stone-700 leading-relaxed mb-6">
+                            A brute-force algorithm is a straightforward strategy that systematically checks <strong>every possible candidate solution</strong> until a satisfactory one is found. It relies on sheer computing power rather than clever optimization.
+                        </p>
+                        <ul class="space-y-4 mb-8">
+                            <li class="flex items-start">
+                                <span class="text-sky-600 text-xl mr-3">&#10003;</span>
+                                <div><strong class="text-stone-900">Complete:</strong> Examines every single candidate. No shortcuts.</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-sky-600 text-xl mr-3">&#10003;</span>
+                                <div><strong class="text-stone-900">Correct:</strong> Guaranteed to find a valid answer if one exists in the search space.</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-sky-600 text-xl mr-3">&#10003;</span>
+                                <div><strong class="text-stone-900">Simple:</strong> Trivial to implement, serving as a baseline for complex algorithms.</div>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-stone-100 rounded-xl p-6 border border-stone-200 text-center">
+                        <h3 class="text-xl font-bold text-stone-800 mb-2">The Padlock Analogy</h3>
+                        <p class="text-sm text-stone-600 mb-6">If you forget a 4-dial combination, brute-force means starting at 0000 and trying every number up to 9999. It takes 10,000 attempts max.</p>
+                        
+                        <div class="flex justify-center gap-2 mb-6">
+                            <div class="w-16 h-24 bg-stone-300 rounded-lg flex flex-col justify-between p-1 shadow-inner border border-stone-400">
+                                <button onclick="changeDial(0, 1)" class="bg-stone-200 hover:bg-white rounded text-stone-600 pb-1">&#9650;</button>
+                                <div id="dial-0" class="text-3xl font-mono font-bold bg-white h-10 flex items-center justify-center dial-window rounded border border-stone-300">0</div>
+                                <button onclick="changeDial(0, -1)" class="bg-stone-200 hover:bg-white rounded text-stone-600 pt-1">&#9660;</button>
+                            </div>
+                            <div class="w-16 h-24 bg-stone-300 rounded-lg flex flex-col justify-between p-1 shadow-inner border border-stone-400">
+                                <button onclick="changeDial(1, 1)" class="bg-stone-200 hover:bg-white rounded text-stone-600 pb-1">&#9650;</button>
+                                <div id="dial-1" class="text-3xl font-mono font-bold bg-white h-10 flex items-center justify-center dial-window rounded border border-stone-300">0</div>
+                                <button onclick="changeDial(1, -1)" class="bg-stone-200 hover:bg-white rounded text-stone-600 pt-1">&#9660;</button>
+                            </div>
+                            <div class="w-16 h-24 bg-stone-300 rounded-lg flex flex-col justify-between p-1 shadow-inner border border-stone-400">
+                                <button onclick="changeDial(2, 1)" class="bg-stone-200 hover:bg-white rounded text-stone-600 pb-1">&#9650;</button>
+                                <div id="dial-2" class="text-3xl font-mono font-bold bg-white h-10 flex items-center justify-center dial-window rounded border border-stone-300">0</div>
+                                <button onclick="changeDial(2, -1)" class="bg-stone-200 hover:bg-white rounded text-stone-600 pt-1">&#9660;</button>
+                            </div>
+                            <div class="w-16 h-24 bg-stone-300 rounded-lg flex flex-col justify-between p-1 shadow-inner border border-stone-400">
+                                <button onclick="changeDial(3, 1)" class="bg-stone-200 hover:bg-white rounded text-stone-600 pb-1">&#9650;</button>
+                                <div id="dial-3" class="text-3xl font-mono font-bold bg-white h-10 flex items-center justify-center dial-window rounded border border-stone-300">0</div>
+                                <button onclick="changeDial(3, -1)" class="bg-stone-200 hover:bg-white rounded text-stone-600 pt-1">&#9660;</button>
+                            </div>
+                        </div>
+                        <div class="text-sm font-mono bg-stone-800 text-stone-200 py-2 rounded">
+                            Attempt: <span id="attempt-counter" class="text-amber-400 font-bold">1</span> / 10,000
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-16 border-t border-stone-200 pt-12">
+                    <h3 class="text-2xl font-bold text-stone-900 mb-4 text-center">The Scaling Problem (Big-O Notation)</h3>
+                    <p class="text-center text-stone-600 max-w-3xl mx-auto mb-8">The fundamental limitation of brute-force is how the cost (time/computation) scales as the search space grows. Each additional digit or variable can cause an explosive growth in required effort.</p>
+                    
+                    <div class="chart-container">
+                        <canvas id="bigOChart"></canvas>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                        <div class="p-4 bg-sky-50 rounded-lg border border-sky-100 text-center">
+                            <div class="font-mono font-bold text-sky-700 text-xl mb-1">O(n)</div>
+                            <div class="text-sm text-stone-600">Linear (Doubles with input)</div>
+                        </div>
+                        <div class="p-4 bg-amber-50 rounded-lg border border-amber-100 text-center">
+                            <div class="font-mono font-bold text-amber-600 text-xl mb-1">O(n&sup2;)</div>
+                            <div class="text-sm text-stone-600">Quadratic (Quadruples)</div>
+                        </div>
+                        <div class="p-4 bg-orange-50 rounded-lg border border-orange-100 text-center">
+                            <div class="font-mono font-bold text-orange-600 text-xl mb-1">O(2&#8319;)</div>
+                            <div class="text-sm text-stone-600">Exponential (Explodes)</div>
+                        </div>
+                        <div class="p-4 bg-red-50 rounded-lg border border-red-100 text-center">
+                            <div class="font-mono font-bold text-red-600 text-xl mb-1">O(n!)</div>
+                            <div class="text-sm text-stone-600">Factorial (Infeasible quickly)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="lesson1" class="scroll-mt-24">
+            <h2 class="text-sm font-bold tracking-widest text-sky-700 uppercase mb-2">Lesson 1</h2>
+            <h3 class="text-3xl font-extrabold text-stone-900 mb-6">Exhaustive Search Patterns</h3>
+            
+            <p class="text-lg text-stone-700 mb-8 max-w-3xl">
+                This section illustrates the "Generate and Test" mechanism. To guarantee finding the absolute best result (or the specific target), a brute-force algorithm cannot skip any candidates. It must touch every element in the dataset.
+            </p>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
+                <div class="flex flex-col md:flex-row gap-8 items-center">
+                    <div class="md:w-1/3">
+                        <h4 class="text-xl font-bold mb-3 text-stone-800">Finding the Cheapest Coffee</h4>
+                        <p class="text-sm text-stone-600 mb-4">Imagine 6 coffee shops on campus. The prices are unknown. The <em>only</em> way to guarantee you find the absolute cheapest option is to check the price at every single shop.</p>
+                        <button onclick="runCoffeeSearch()" id="coffee-btn" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                            <span class="mr-2">&#9749;</span> Start Exhaustive Search
+                        </button>
+                        <div id="coffee-result" class="mt-4 p-4 bg-emerald-50 text-emerald-800 rounded-lg font-medium hidden">
+                            Cheapest found: <strong id="cheapest-price"></strong> at <span id="cheapest-shop"></span>!
+                        </div>
+                    </div>
+                    
+                    <div class="md:w-2/3 grid grid-cols-2 sm:grid-cols-3 gap-4 w-full">
+                        <div id="shop-0" class="coffee-shop bg-stone-50 border-2 border-dashed border-stone-300 rounded-xl p-4 text-center transition-all duration-300">
+                            <div class="text-2xl mb-2">&#127976;</div>
+                            <div class="font-semibold text-stone-700">Shop A</div>
+                            <div class="price-tag text-lg font-mono text-stone-400 mt-2 opacity-0">?</div>
+                        </div>
+                        <div id="shop-1" class="coffee-shop bg-stone-50 border-2 border-dashed border-stone-300 rounded-xl p-4 text-center transition-all duration-300">
+                            <div class="text-2xl mb-2">&#127976;</div>
+                            <div class="font-semibold text-stone-700">Shop B</div>
+                            <div class="price-tag text-lg font-mono text-stone-400 mt-2 opacity-0">?</div>
+                        </div>
+                        <div id="shop-2" class="coffee-shop bg-stone-50 border-2 border-dashed border-stone-300 rounded-xl p-4 text-center transition-all duration-300">
+                            <div class="text-2xl mb-2">&#127976;</div>
+                            <div class="font-semibold text-stone-700">Shop C</div>
+                            <div class="price-tag text-lg font-mono text-stone-400 mt-2 opacity-0">?</div>
+                        </div>
+                        <div id="shop-3" class="coffee-shop bg-stone-50 border-2 border-dashed border-stone-300 rounded-xl p-4 text-center transition-all duration-300">
+                            <div class="text-2xl mb-2">&#127976;</div>
+                            <div class="font-semibold text-stone-700">Shop D</div>
+                            <div class="price-tag text-lg font-mono text-stone-400 mt-2 opacity-0">?</div>
+                        </div>
+                        <div id="shop-4" class="coffee-shop bg-stone-50 border-2 border-dashed border-stone-300 rounded-xl p-4 text-center transition-all duration-300">
+                            <div class="text-2xl mb-2">&#127976;</div>
+                            <div class="font-semibold text-stone-700">Shop E</div>
+                            <div class="price-tag text-lg font-mono text-stone-400 mt-2 opacity-0">?</div>
+                        </div>
+                        <div id="shop-5" class="coffee-shop bg-stone-50 border-2 border-dashed border-stone-300 rounded-xl p-4 text-center transition-all duration-300">
+                            <div class="text-2xl mb-2">&#127976;</div>
+                            <div class="font-semibold text-stone-700">Shop F</div>
+                            <div class="price-tag text-lg font-mono text-stone-400 mt-2 opacity-0">?</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 text-sm text-stone-500 text-center">
+                    Algorithm Performance: Checked <strong class="text-stone-800">6 candidates</strong>. Time Complexity: <strong class="text-stone-800">O(n)</strong>.
+                </div>
+            </div>
+        </section>
+
+        <section id="lesson2" class="scroll-mt-24">
+            <h2 class="text-sm font-bold tracking-widest text-sky-700 uppercase mb-2">Lesson 2</h2>
+            <h3 class="text-3xl font-extrabold text-stone-900 mb-6">Password Cracking Simulations</h3>
+            
+            <p class="text-lg text-stone-700 mb-8 max-w-3xl">
+                Cybersecurity attackers use exhaustive search to break passwords. By taking a stolen cryptographic hash, they generate every possible password candidate, hash it, and compare it. The effectiveness of a password relies entirely on making the resulting <strong>search space</strong> impractically large.
+            </p>
+
+            <div class="bg-stone-900 rounded-2xl shadow-xl border border-stone-800 overflow-hidden text-stone-200">
+                <div class="p-6 sm:p-8 border-b border-stone-700">
+                    <h4 class="text-2xl font-bold text-white mb-2 flex items-center">
+                        <span class="mr-3 text-amber-500">&#128273;</span> Search Space Explosion Calculator
+                    </h4>
+                    <p class="text-stone-400 text-sm">Adjust the character set and password length to see how quickly the total number of combinations grows. Values are displayed on a logarithmic scale.</p>
+                </div>
+                
+                <div class="p-6 sm:p-8 bg-stone-800">
+                    <div class="flex flex-col md:flex-row gap-8">
+                        <div class="w-full md:w-1/3 space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-stone-300 mb-2">Select Target Length: <span id="len-display" class="text-amber-400 font-bold text-lg">6</span> characters</label>
+                                <input type="range" id="pass-length" min="4" max="12" value="6" class="w-full h-2 bg-stone-600 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                                <div class="flex justify-between text-xs text-stone-500 mt-1">
+                                    <span>4 (PIN)</span>
+                                    <span>8 (Min)</span>
+                                    <span>12 (Strong)</span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <h5 class="text-sm font-medium text-stone-300 border-b border-stone-600 pb-2">Resulting Combinations at Length <span id="len-display-2">6</span>:</h5>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-stone-300">Digits (0-9)</span>
+                                        <span id="val-digits" class="font-mono text-stone-100"></span>
+                                    </div>
+                                    <div class="text-xs text-stone-500">Char set size: 10</div>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-stone-300">Lowercase (a-z)</span>
+                                        <span id="val-lower" class="font-mono text-stone-100"></span>
+                                    </div>
+                                    <div class="text-xs text-stone-500">Char set size: 26</div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-stone-300">Mixed Case (a-zA-Z)</span>
+                                        <span id="val-mixed" class="font-mono text-stone-100"></span>
+                                    </div>
+                                    <div class="text-xs text-stone-500">Char set size: 52</div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-amber-400 font-bold">Full ASCII</span>
+                                        <span id="val-ascii" class="font-mono text-amber-400 font-bold"></span>
+                                    </div>
+                                    <div class="text-xs text-stone-500">Char set size: 95</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="w-full md:w-2/3">
+                            <div class="chart-container h-[300px]">
+                                <canvas id="passwordChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-stone-900 p-6 sm:p-8 border-t border-stone-700">
+                    <h5 class="text-lg font-bold text-white mb-4">Defense-in-Depth Mechanisms</h5>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-stone-800 p-4 rounded-lg border border-stone-700 hover:border-sky-500 transition-colors cursor-pointer group" onclick="toggleDefense('lockout')">
+                            <div class="font-bold text-sky-400 mb-1 flex justify-between">
+                                Account Lockout
+                                <span class="text-stone-500 group-hover:text-sky-400">&#8853;</span>
+                            </div>
+                            <div id="def-lockout" class="text-sm text-stone-400 hidden mt-2">Locks the account after 3-5 failed attempts. Completely stops online brute-force attacks by limiting the search size directly.</div>
+                        </div>
+                        <div class="bg-stone-800 p-4 rounded-lg border border-stone-700 hover:border-sky-500 transition-colors cursor-pointer group" onclick="toggleDefense('rate')">
+                            <div class="font-bold text-sky-400 mb-1 flex justify-between">
+                                Rate Limiting
+                                <span class="text-stone-500 group-hover:text-sky-400">&#8853;</span>
+                            </div>
+                            <div id="def-rate" class="text-sm text-stone-400 hidden mt-2">Restricts guess attempts to 1 per second. Mathematically forces brute-force completion times into centuries.</div>
+                        </div>
+                        <div class="bg-stone-800 p-4 rounded-lg border border-stone-700 hover:border-sky-500 transition-colors cursor-pointer group" onclick="toggleDefense('salt')">
+                            <div class="font-bold text-sky-400 mb-1 flex justify-between">
+                                Salted Hashing
+                                <span class="text-stone-500 group-hover:text-sky-400">&#8853;</span>
+                            </div>
+                            <div id="def-salt" class="text-sm text-stone-400 hidden mt-2">Adds random data before hashing. Defeats pre-computed 'rainbow tables', forcing attackers to compute hashes individually for every user.</div>
+                        </div>
+                        <div class="bg-stone-800 p-4 rounded-lg border border-stone-700 hover:border-amber-500 transition-colors cursor-pointer group" onclick="toggleDefense('mfa')">
+                            <div class="font-bold text-amber-500 mb-1 flex justify-between">
+                                Multi-Factor Auth (MFA)
+                                <span class="text-stone-500 group-hover:text-amber-500">&#8853;</span>
+                            </div>
+                            <div id="def-mfa" class="text-sm text-stone-400 hidden mt-2">Requires a second physical token or app. Even if the password search space is successfully brute-forced, the attacker cannot login.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="lesson3" class="scroll-mt-24">
+            <h2 class="text-sm font-bold tracking-widest text-sky-700 uppercase mb-2">Lesson 3</h2>
+            <h3 class="text-3xl font-extrabold text-stone-900 mb-6">Network Vulnerability Scanning</h3>
+            
+            <p class="text-lg text-stone-700 mb-8 max-w-3xl">
+                Port scanning applies the brute-force concept to network reconnaissance. By attempting a connection (TCP Full Connect) to every single port sequentially, an attacker discovers listening services. Defenders rely on the predictable, noisy nature of brute-force to detect it.
+            </p>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3">
+                    <div class="bg-stone-50 p-8 border-r border-stone-200 col-span-1">
+                        <h4 class="text-xl font-bold text-stone-800 mb-4">TCP Scan Simulator</h4>
+                        <p class="text-sm text-stone-600 mb-6">Simulate a sequential brute-force scan across the first 100 ports of a target server. Watch how quickly an Intrusion Detection System (IDS) flags the anomalous, sequential traffic pattern.</p>
+                        
+                        <div class="bg-white border border-stone-300 rounded p-4 mb-6 font-mono text-xs text-stone-500 h-32 overflow-y-auto" id="scan-log">
+                            > Target acquired...<br>
+                            > Awaiting scan initiation...
+                        </div>
+                        
+                        <button onclick="runPortScan()" id="scan-btn" class="w-full bg-stone-800 hover:bg-stone-900 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                            <span class="mr-2">&#128225;</span> Execute Sequential Scan
+                        </button>
+
+                        <div id="ids-warning" class="mt-6 border-2 border-red-500 bg-red-50 rounded-lg p-4 hidden ids-alert">
+                            <div class="text-red-700 font-bold flex items-center mb-1">
+                                <span class="text-xl mr-2">&#9888;</span> IDS ALERT TRIGGERED
+                            </div>
+                            <div class="text-xs text-red-600 font-mono mt-1">
+                                Signature: Rapid sequential port access detected from single source IP. Threat blocked.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-8 col-span-2">
+                        <div class="flex justify-between items-end mb-4">
+                            <h4 class="font-bold text-stone-800">Target Ports (1-100)</h4>
+                            <div class="flex gap-4 text-xs font-medium text-stone-500">
+                                <span class="flex items-center"><span class="w-3 h-3 bg-stone-200 block mr-1"></span> Unscanned</span>
+                                <span class="flex items-center"><span class="w-3 h-3 bg-stone-700 block mr-1"></span> Closed</span>
+                                <span class="flex items-center"><span class="w-3 h-3 bg-emerald-500 block mr-1"></span> Open</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-10 gap-1 sm:gap-2" id="port-grid">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
+                <p class="text-sm text-stone-800">
+                    <strong class="font-bold text-amber-800">Critical Legal Warning:</strong> Scanning systems you do not own or lack written permission to probe is illegal under laws like the CFAA. Knowledge of scanning mechanics is strictly for defensive configuration and IDS/IPS tuning.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-900 text-stone-400 py-12 border-t border-stone-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <div>
+                    <h4 class="text-white font-bold mb-4">CS Algorithms Module</h4>
+                    <p class="text-sm">Interactive educational material covering exhaustive search patterns, cryptographic implications, and network defense strategies.</p>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-4">Key References</h4>
+                    <ul class="text-sm space-y-2">
+                        <li>NIST SP 800-63B Guidelines</li>
+                        <li>OWASP Defense Framework</li>
+                        <li>IANA Port Registry</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-4">Disclaimer</h4>
+                    <p class="text-sm text-stone-500">All techniques presented are for educational and defensive purposes only. Unauthorized access is a criminal offense.</p>
+                </div>
+            </div>
+            <div class="text-center text-xs text-stone-600 border-t border-stone-800 pt-8">
+                &copy; 2026 Cyber.SoHo &mdash; Interactive Transformation.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // --- Core Concept: Padlock Simulation ---
+        let dialValues = [0, 0, 0, 0];
+        
+        function changeDial(index, delta) {
+            dialValues[index] += delta;
+            if (dialValues[index] > 9) dialValues[index] = 0;
+            if (dialValues[index] < 0) dialValues[index] = 9;
+            
+            document.getElementById(`dial-${index}`).innerText = dialValues[index];
+            
+            // Calculate current index representing combinations tried
+            const attemptNum = (dialValues[0]*1000) + (dialValues[1]*100) + (dialValues[2]*10) + dialValues[3];
+            // Format number with commas
+            document.getElementById('attempt-counter').innerText = (attemptNum + 1).toLocaleString();
+        }
+
+        // --- Core Concept: Big-O Chart ---
+        const ctxBigO = document.getElementById('bigOChart').getContext('2d');
+        const labelsBigO = [1, 2, 3, 4, 5, 6, 7, 8];
+        const dataN = labelsBigO.map(n => n);
+        const dataNSq = labelsBigO.map(n => n * n);
+        const data2N = labelsBigO.map(n => Math.pow(2, n));
+        // O(n!) grows too fast, limiting to show curve briefly then letting it fly off chart
+        const dataFact = [1, 2, 6, 24, 120, 720, null, null]; 
+
+        new Chart(ctxBigO, {
+            type: 'line',
+            data: {
+                labels: labelsBigO,
+                datasets: [
+                    { label: 'O(n) Linear', data: dataN, borderColor: '#0284c7', backgroundColor: '#0284c7', tension: 0.3 },
+                    { label: 'O(n²) Quadratic', data: dataNSq, borderColor: '#d97706', backgroundColor: '#d97706', tension: 0.3 },
+                    { label: 'O(2ⁿ) Exponential', data: data2N, borderColor: '#ea580c', backgroundColor: '#ea580c', tension: 0.3 },
+                    { label: 'O(n!) Factorial', data: dataFact, borderColor: '#dc2626', backgroundColor: '#dc2626', tension: 0.3, borderDash: [5, 5] }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.parsed.y} operations`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        title: { display: true, text: 'Computations / Time Required' },
+                        max: 300 // Cap y-axis to show curves clearly before factorial explodes completely
+                    },
+                    x: { title: { display: true, text: 'Input Size (n)' } }
+                }
+            }
+        });
+
+        // --- Lesson 1: Coffee Search Simulation ---
+        const coffeePrices = [4.50, 3.75, 5.25, 2.90, 4.10, 3.50]; // Shop D is cheapest
+        const shopNames = ['Shop A', 'Shop B', 'Shop C', 'Shop D', 'Shop E', 'Shop F'];
+        let isSearching = false;
+
+        function runCoffeeSearch() {
+            if (isSearching) return;
+            isSearching = true;
+            document.getElementById('coffee-btn').disabled = true;
+            document.getElementById('coffee-btn').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('coffee-result').classList.add('hidden');
+            
+            // Reset UI
+            for(let i=0; i<6; i++) {
+                const shop = document.getElementById(`shop-${i}`);
+                shop.classList.remove('bg-sky-100', 'border-sky-400', 'bg-emerald-100', 'border-emerald-500', 'shadow-md');
+                shop.classList.add('bg-stone-50', 'border-stone-300');
+                shop.querySelector('.price-tag').classList.add('opacity-0');
+            }
+
+            let current = 0;
+            let minPrice = Infinity;
+            let minIndex = -1;
+
+            const searchInterval = setInterval(() => {
+                if (current > 0) {
+                    const prev = document.getElementById(`shop-${current-1}`);
+                    prev.classList.remove('bg-sky-100', 'border-sky-400', 'shadow-md');
+                }
+
+                if (current < 6) {
+                    // Check current
+                    const activeShop = document.getElementById(`shop-${current}`);
+                    activeShop.classList.remove('bg-stone-50', 'border-stone-300');
+                    activeShop.classList.add('bg-sky-100', 'border-sky-400', 'shadow-md');
+                    
+                    const priceTag = activeShop.querySelector('.price-tag');
+                    priceTag.innerText = `$${coffeePrices[current].toFixed(2)}`;
+                    priceTag.classList.remove('opacity-0');
+
+                    if (coffeePrices[current] < minPrice) {
+                        minPrice = coffeePrices[current];
+                        minIndex = current;
+                    }
+                    current++;
+                } else {
+                    clearInterval(searchInterval);
+                    // Highlight cheapest
+                    const bestShop = document.getElementById(`shop-${minIndex}`);
+                    bestShop.classList.remove('bg-stone-50', 'border-stone-300', 'bg-sky-100', 'border-sky-400');
+                    bestShop.classList.add('bg-emerald-100', 'border-emerald-500', 'shadow-md');
+                    
+                    document.getElementById('cheapest-price').innerText = `$${minPrice.toFixed(2)}`;
+                    document.getElementById('cheapest-shop').innerText = shopNames[minIndex];
+                    document.getElementById('coffee-result').classList.remove('hidden');
+                    
+                    document.getElementById('coffee-btn').disabled = false;
+                    document.getElementById('coffee-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+                    isSearching = false;
+                }
+            }, 600); // Check one every 600ms
+        }
+
+        // --- Lesson 2: Password Space Calculator ---
+        const lenInput = document.getElementById('pass-length');
+        const ctxPass = document.getElementById('passwordChart').getContext('2d');
+        
+        let passChart = new Chart(ctxPass, {
+            type: 'bar',
+            data: {
+                labels: ['Digits (10)', 'Lowercase (26)', 'Mixed Case (52)', 'Full ASCII (95)'],
+                datasets: [{
+                    label: 'Total Combinations',
+                    data: [0,0,0,0],
+                    backgroundColor: ['#a8a29e', '#78716c', '#44403c', '#fbbf24'],
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                // Formatting large numbers neatly
+                                let num = context.raw;
+                                if (num > 1e15) return (num / 1e18).toFixed(2) + ' Quintillion';
+                                if (num > 1e12) return (num / 1e15).toFixed(2) + ' Quadrillion';
+                                if (num > 1e9) return (num / 1e12).toFixed(2) + ' Trillion';
+                                if (num > 1e6) return (num / 1e9).toFixed(2) + ' Billion';
+                                if (num > 1e3) return (num / 1e6).toFixed(2) + ' Million';
+                                return num.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'logarithmic', // Crucial for showing differences between 10^4 and 95^12
+                        title: { display: true, text: 'Combinations (Log Scale)', color: '#a8a29e' },
+                        grid: { color: '#44403c' },
+                        ticks: { color: '#a8a29e' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#a8a29e' }
+                    }
+                }
+            }
+        });
+
+        function formatHugeNumber(num) {
+            if (num >= 1e18) return (num / 1e18).toFixed(1) + ' Quintillion';
+            if (num >= 1e15) return (num / 1e15).toFixed(1) + ' Quadrillion';
+            if (num >= 1e12) return (num / 1e12).toFixed(1) + ' Trillion';
+            if (num >= 1e9) return (num / 1e9).toFixed(1) + ' Billion';
+            if (num >= 1e6) return (num / 1e6).toFixed(1) + ' Million';
+            return num.toLocaleString();
+        }
+
+        function updatePasswordStats() {
+            const length = parseInt(lenInput.value);
+            document.getElementById('len-display').innerText = length;
+            document.getElementById('len-display-2').innerText = length;
+
+            const base10 = Math.pow(10, length);
+            const base26 = Math.pow(26, length);
+            const base52 = Math.pow(52, length);
+            const base95 = Math.pow(95, length);
+
+            document.getElementById('val-digits').innerText = formatHugeNumber(base10);
+            document.getElementById('val-lower').innerText = formatHugeNumber(base26);
+            document.getElementById('val-mixed').innerText = formatHugeNumber(base52);
+            document.getElementById('val-ascii').innerText = formatHugeNumber(base95);
+
+            passChart.data.datasets[0].data = [base10, base26, base52, base95];
+            passChart.update();
+        }
+
+        lenInput.addEventListener('input', updatePasswordStats);
+        updatePasswordStats(); // Initial load
+
+        function toggleDefense(id) {
+            const el = document.getElementById(`def-${id}`);
+            el.classList.toggle('hidden');
+        }
+
+        // --- Lesson 3: Port Scanner Simulation ---
+        const portGrid = document.getElementById('port-grid');
+        const openPorts = [22, 25, 53, 80]; // Targeted open ports based on report
+        let scanActive = false;
+
+        // Initialize grid
+        for(let i=1; i<=100; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'w-full pt-[100%] relative bg-stone-200 rounded-sm border border-stone-300 transition-colors duration-100';
+            cell.id = `port-${i}`;
+            
+            const label = document.createElement('div');
+            label.className = 'absolute inset-0 flex items-center justify-center text-[8px] sm:text-xs text-stone-500 font-mono';
+            label.innerText = i;
+            
+            cell.appendChild(label);
+            portGrid.appendChild(cell);
+        }
+
+        function runPortScan() {
+            if(scanActive) return;
+            scanActive = true;
+            
+            const btn = document.getElementById('scan-btn');
+            const log = document.getElementById('scan-log');
+            const alertBox = document.getElementById('ids-warning');
+            
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            alertBox.classList.add('hidden');
+            
+            // Reset grid
+            for(let i=1; i<=100; i++) {
+                const cell = document.getElementById(`port-${i}`);
+                cell.className = 'w-full pt-[100%] relative bg-stone-200 rounded-sm border border-stone-300 transition-colors duration-100';
+            }
+
+            log.innerHTML = '> Initiating TCP Full Connect Scan on ports 1-100...<br>';
+            
+            let currentPort = 1;
+            
+            // Rapid scan interval
+            const scanInterval = setInterval(() => {
+                if (currentPort > 100) {
+                    clearInterval(scanInterval);
+                    scanActive = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    log.innerHTML += '> Scan complete. Found ' + openPorts.length + ' open ports.';
+                    log.scrollTop = log.scrollHeight;
+                    return;
+                }
+
+                const cell = document.getElementById(`port-${currentPort}`);
+                
+                // Simulate checking
+                if (openPorts.includes(currentPort)) {
+                    cell.classList.remove('bg-stone-200', 'border-stone-300');
+                    cell.classList.add('bg-emerald-500', 'border-emerald-600', 'shadow-inner');
+                    cell.querySelector('div').classList.add('text-white', 'font-bold');
+                    log.innerHTML += `<span class="text-emerald-500">> Port ${currentPort} OPEN [SYN/ACK received]</span><br>`;
+                } else {
+                    cell.classList.remove('bg-stone-200', 'border-stone-300');
+                    cell.classList.add('bg-stone-700', 'border-stone-800');
+                    cell.querySelector('div').classList.add('text-stone-400');
+                }
+
+                log.scrollTop = log.scrollHeight;
+
+                // IDS Trigger logic (triggers after 15 sequential rapid attempts)
+                if (currentPort === 15) {
+                    alertBox.classList.remove('hidden');
+                    log.innerHTML += `<span class="text-red-500">> Connection dropped by firewall.</span><br>`;
+                }
+
+                currentPort++;
+            }, 30); // Very fast, 30ms per port to show the "brute" nature
+        }
+
+    </script>
+</body>
+</html>
+
+
+

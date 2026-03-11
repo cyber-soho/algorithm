@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Week 06 · Module 05 — Security Scanner Module</title>
+<style>
+/* ── Fonts ─────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+
+/* ── Variables ──────────────────────────────────────────────── */
+:root {
+  --bg:          #0c0e14;
+  --surface:     #12151f;
+  --surface2:    #181c28;
+  --border:      #1e2436;
+  --border2:     #252c42;
+  --accent:      #00e5a0;
+  --accent2:     #0090ff;
+  --accent3:     #ff4d6d;
+  --accent4:     #f5a623;
+  --text:        #d8dde8;
+  --text-dim:    #6b7491;
+  --text-bright: #f0f3ff;
+  --code-bg:     #0a0d14;
+  --warn-bg:     rgba(255,77,109,0.08);
+  --warn-border: rgba(255,77,109,0.35);
+  --info-bg:     rgba(0,144,255,0.08);
+  --info-border: rgba(0,144,255,0.35);
+  --tip-bg:      rgba(0,229,160,0.07);
+  --tip-border:  rgba(0,229,160,0.3);
+  --font-head:   'Syne', sans-serif;
+  --font-body:   'DM Sans', sans-serif;
+  --font-mono:   'DM Mono', monospace;
+  --r:           8px;
+  --r2:          12px;
+}
+
+/* ── Reset ──────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-weight:300;line-height:1.7;min-height:100vh;overflow-x:hidden}
+
+/* ── Scan-line overlay ──────────────────────────────────────── */
+body::before{
+  content:'';pointer-events:none;position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.18) 2px,rgba(0,0,0,.18) 4px);
+  z-index:1000;opacity:.35
+}
+
+/* ── Animated background grid ──────────────────────────────── */
+.bg-grid{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(0,229,160,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,160,.03) 1px,transparent 1px);
+  background-size:48px 48px;
+  animation:gridMove 20s linear infinite
+}
+@keyframes gridMove{from{background-position:0 0}to{background-position:48px 48px}}
+
+/* ── Accent glow blobs ──────────────────────────────────────── */
+.blob{position:fixed;pointer-events:none;border-radius:50%;filter:blur(120px);opacity:.12;z-index:0}
+.blob1{width:600px;height:600px;background:var(--accent);top:-150px;left:-150px;animation:blobFloat 12s ease-in-out infinite}
+.blob2{width:500px;height:500px;background:var(--accent2);bottom:-100px;right:-100px;animation:blobFloat 15s ease-in-out infinite reverse}
+@keyframes blobFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(30px) scale(1.05)}}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.wrapper{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 28px 80px}
+
+/* ── Navigation sidebar (TOC) ───────────────────────────────── */
+.toc-float{
+  position:fixed;top:50%;left:max(16px,calc(50% - 600px));transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:6px;z-index:50
+}
+.toc-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--border2);
+  border:none;cursor:pointer;transition:all .25s;padding:0;
+  position:relative
+}
+.toc-dot::after{
+  content:attr(data-label);position:absolute;left:18px;top:50%;transform:translateY(-50%);
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text-dim);font-family:var(--font-mono);font-size:11px;
+  padding:3px 8px;border-radius:4px;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:opacity .2s
+}
+.toc-dot:hover::after,.toc-dot.active::after{opacity:1}
+.toc-dot.active{background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.toc-dot:hover{background:var(--accent);transform:scale(1.4)}
+@media(max-width:1200px){.toc-float{display:none}}
+
+/* ── Hero ────────────────────────────────────────────────────── */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  padding:80px 0 60px;border-bottom:1px solid var(--border)
+}
+.hero-meta{
+  display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px
+}
+.tag{
+  font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:.08em;
+  padding:4px 12px;border-radius:20px;border:1px solid;text-transform:uppercase
+}
+.tag-week{background:rgba(0,229,160,.1);border-color:rgba(0,229,160,.4);color:var(--accent)}
+.tag-mod{background:rgba(0,144,255,.1);border-color:rgba(0,144,255,.4);color:var(--accent2)}
+.tag-type{background:rgba(245,166,35,.1);border-color:rgba(245,166,35,.4);color:var(--accent4)}
+
+.hero h1{
+  font-family:var(--font-head);font-size:clamp(2.4rem,5vw,4.2rem);
+  font-weight:800;line-height:1.1;color:var(--text-bright);
+  margin-bottom:20px
+}
+.hero h1 span{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hero-sub{
+  font-size:1.15rem;color:var(--text-dim);max-width:680px;margin-bottom:40px;
+  font-weight:300
+}
+.hero-stats{
+  display:flex;gap:24px;flex-wrap:wrap
+}
+.stat{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
+  padding:16px 24px;display:flex;flex-direction:column;gap:4px;
+  position:relative;overflow:hidden
+}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
+.stat-val{font-family:var(--font-head);font-size:1.6rem;font-weight:700;color:var(--text-bright)}
+.stat-label{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em}
+
+/* ── Progress bar ────────────────────────────────────────────── */
+.progress-bar{
+  position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  z-index:200;transition:width .1s;box-shadow:0 0 12px var(--accent)
+}
+
+/* ── Section headers ─────────────────────────────────────────── */
+.sec{padding:70px 0 40px}
+.sec-label{
+  font-family:var(--font-mono);font-size:11px;color:var(--accent);
+  letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px;
+  display:flex;align-items:center;gap:10px
+}
+.sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border2),transparent)}
+.sec h2{
+  font-family:var(--font-head);font-size:clamp(1.5rem,3vw,2.2rem);
+  font-weight:700;color:var(--text-bright);margin-bottom:20px;line-height:1.2
+}
+.sec h3{
+  font-family:var(--font-head);font-size:1.15rem;font-weight:600;
+  color:var(--text-bright);margin:32px 0 12px
+}
+.sec h4{
+  font-family:var(--font-body);font-size:.95rem;font-weight:500;
+  color:var(--accent4);margin:24px 0 8px;letter-spacing:.03em;text-transform:uppercase;font-size:.85rem
+}
+
+/* ── Alert boxes ─────────────────────────────────────────────── */
+.alert{border-radius:var(--r2);padding:20px 24px;margin:24px 0;border-left:3px solid}
+.alert-warn{background:var(--warn-bg);border-color:var(--accent3)}
+.alert-info{background:var(--info-bg);border-color:var(--accent2)}
+.alert-tip{background:var(--tip-bg);border-color:var(--accent)}
+.alert-title{
+  font-family:var(--font-head);font-weight:700;font-size:.95rem;
+  margin-bottom:10px;display:flex;align-items:center;gap:8px
+}
+.alert-warn .alert-title{color:var(--accent3)}
+.alert-info .alert-title{color:var(--accent2)}
+.alert-tip .alert-title{color:var(--accent)}
+.alert p,.alert li{font-size:.9rem;margin-bottom:4px;color:var(--text)}
+.alert ul{padding-left:18px}
+.alert strong{color:var(--text-bright)}
+
+/* ── Glossary grid ───────────────────────────────────────────── */
+.gloss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:24px}
+.gloss-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
+  padding:20px 22px;cursor:pointer;transition:all .2s;
+  position:relative;overflow:hidden
+}
+.gloss-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,229,160,.04),transparent);
+  opacity:0;transition:opacity .2s
+}
+.gloss-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,229,160,.08)}
+.gloss-card:hover::before{opacity:1}
+.gloss-term{
+  font-family:var(--font-head);font-weight:700;font-size:1rem;
+  color:var(--accent);margin-bottom:4px;display:flex;align-items:center;gap:8px
+}
+.gloss-icon{font-size:1.2rem}
+.gloss-body{font-size:.875rem;color:var(--text-dim);line-height:1.6}
+.gloss-body.hidden{display:none}
+.gloss-expand{
+  font-family:var(--font-mono);font-size:.75rem;color:var(--accent2);
+  margin-top:10px;cursor:pointer;display:inline-block
+}
+
+/* ── Code blocks ─────────────────────────────────────────────── */
+.code-wrap{position:relative;margin:20px 0}
+.code-header{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface2);border:1px solid var(--border);border-bottom:none;
+  border-radius:var(--r) var(--r) 0 0;padding:10px 16px
+}
+.code-lang{font-family:var(--font-mono);font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.1em}
+.code-dots{display:flex;gap:6px}
+.code-dot{width:10px;height:10px;border-radius:50%}
+.code-dot:nth-child(1){background:#ff5f57}
+.code-dot:nth-child(2){background:#febc2e}
+.code-dot:nth-child(3){background:#28c840}
+.copy-btn{
+  font-family:var(--font-mono);font-size:11px;background:none;border:1px solid var(--border2);
+  color:var(--text-dim);padding:4px 10px;border-radius:4px;cursor:pointer;
+  transition:all .2s
+}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+.copy-btn.copied{color:var(--accent);border-color:var(--accent)}
+pre{
+  background:var(--code-bg);border:1px solid var(--border);border-top:none;
+  border-radius:0 0 var(--r) var(--r);padding:20px 22px;overflow-x:auto;
+  font-family:var(--font-mono);font-size:.82rem;line-height:1.65;
+  color:#c9d1e0
+}
+code.inline{
+  font-family:var(--font-mono);font-size:.84em;
+  background:var(--surface2);border:1px solid var(--border);
+  padding:1px 6px;border-radius:4px;color:var(--accent)
+}
+
+/* syntax colouring (manual) */
+.kw{color:#7c9dff}
+.fn{color:#00d4aa}
+.st{color:#f5a623}
+.cm{color:#445069;font-style:italic}
+.nu{color:#ff8c69}
+.cl{color:#e879f9}
+
+/* ── Complexity table ────────────────────────────────────────── */
+.complexity-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:.875rem}
+.complexity-table th{
+  font-family:var(--font-mono);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--text-dim);font-weight:500;
+  background:var(--surface2);border:1px solid var(--border);padding:10px 14px;text-align:left
+}
+.complexity-table td{border:1px solid var(--border);padding:10px 14px;color:var(--text)}
+.complexity-table tr:hover td{background:var(--surface)}
+.complexity-table td:nth-child(3){font-family:var(--font-mono);font-size:.8rem}
+.o-badge{
+  display:inline-block;font-family:var(--font-mono);font-size:.8rem;
+  padding:2px 8px;border-radius:4px;font-weight:500
+}
+.o-1{background:rgba(0,229,160,.15);color:var(--accent);border:1px solid rgba(0,229,160,.3)}
+.o-log{background:rgba(0,144,255,.15);color:var(--accent2);border:1px solid rgba(0,144,255,.3)}
+.o-n{background:rgba(245,166,35,.12);color:var(--accent4);border:1px solid rgba(245,166,35,.3)}
+.o-nlog{background:rgba(255,77,109,.12);color:var(--accent3);border:1px solid rgba(255,77,109,.3)}
+
+/* ── Exercise steps ──────────────────────────────────────────── */
+.steps{display:flex;flex-direction:column;gap:0}
+.step{
+  display:flex;gap:20px;padding:24px 0;
+  border-bottom:1px solid var(--border);
+  animation:fadeUp .5s both
+}
+.step:last-child{border-bottom:none}
+.step-num{
+  flex-shrink:0;width:36px;height:36px;border-radius:50%;
+  background:var(--surface2);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:.75rem;color:var(--accent);font-weight:500;
+  margin-top:3px
+}
+.step-content{flex:1}
+.step-title{font-family:var(--font-head);font-weight:700;font-size:1rem;color:var(--text-bright);margin-bottom:6px}
+.step-desc{font-size:.9rem;color:var(--text-dim);line-height:1.65}
+.step-time{
+  font-family:var(--font-mono);font-size:.75rem;color:var(--accent2);
+  background:rgba(0,144,255,.08);border:1px solid rgba(0,144,255,.2);
+  padding:2px 8px;border-radius:4px;display:inline-block;margin-top:8px
+}
+
+/* ── Question blocks ─────────────────────────────────────────── */
+.question{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
+  padding:20px 24px;margin:20px 0;
+  border-left:3px solid var(--accent4)
+}
+.question-label{
+  font-family:var(--font-mono);font-size:.75rem;color:var(--accent4);
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;
+  display:flex;align-items:center;gap:6px
+}
+.question p{font-size:.9rem;color:var(--text);line-height:1.65}
+.question p+p{margin-top:8px}
+.answer-box{
+  margin-top:14px;background:var(--code-bg);border:1px dashed var(--border2);
+  border-radius:var(--r);padding:12px 16px;
+  font-family:var(--font-mono);font-size:.82rem;color:var(--text-dim);
+  min-height:60px;cursor:text;outline:none;width:100%;
+  resize:vertical;font-weight:300;line-height:1.6;
+  transition:border-color .2s
+}
+.answer-box:focus{border-color:var(--accent);color:var(--text)}
+.answer-box::placeholder{color:var(--border2)}
+
+/* ── Project context card ────────────────────────────────────── */
+.project-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
+  padding:28px 32px;margin:24px 0;
+  background:linear-gradient(135deg,rgba(0,229,160,.03) 0%,rgba(0,144,255,.03) 100%);
+  border-color:var(--border2)
+}
+.project-card h3{
+  font-family:var(--font-head);font-weight:700;font-size:1.05rem;
+  color:var(--text-bright);margin-bottom:16px;
+  display:flex;align-items:center;gap:10px
+}
+.phase-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.phase-item{
+  display:flex;align-items:flex-start;gap:12px;
+  font-size:.875rem;padding:10px 14px;
+  background:var(--surface2);border-radius:var(--r);border:1px solid var(--border)
+}
+.phase-dot{
+  width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0
+}
+.phase-dot.done{background:var(--accent)}
+.phase-dot.active{background:var(--accent4);box-shadow:0 0 8px var(--accent4)}
+.phase-dot.todo{background:var(--border2)}
+
+/* ── Deliverables checklist ──────────────────────────────────── */
+.checklist{list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.checklist li{
+  display:flex;align-items:center;gap:12px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:10px 16px;font-size:.875rem;
+  cursor:pointer;transition:all .2s;user-select:none
+}
+.checklist li:hover{border-color:var(--accent2)}
+.checklist li.checked{border-color:rgba(0,229,160,.3);background:rgba(0,229,160,.04)}
+.check-icon{
+  width:18px;height:18px;border-radius:4px;border:1.5px solid var(--border2);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;font-size:.7rem
+}
+.checklist li.checked .check-icon{
+  background:var(--accent);border-color:var(--accent);color:var(--bg)
+}
+.check-label{flex:1;color:var(--text-dim)}
+.checklist li.checked .check-label{color:var(--text);text-decoration:line-through;text-decoration-color:rgba(0,229,160,.4)}
+
+/* ── Resources table ─────────────────────────────────────────── */
+.resources{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:20px}
+.resource-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
+  padding:16px 18px;transition:all .2s;text-decoration:none;color:inherit;
+  display:block
+}
+.resource-card:hover{border-color:var(--accent2);transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,144,255,.1)}
+.resource-name{font-family:var(--font-head);font-weight:600;font-size:.9rem;color:var(--accent2);margin-bottom:4px}
+.resource-desc{font-size:.8rem;color:var(--text-dim)}
+.resource-url{font-family:var(--font-mono);font-size:.72rem;color:var(--border2);margin-top:6px;word-break:break-all}
+
+/* ── Timeline progress ───────────────────────────────────────── */
+.timeline{
+  display:flex;gap:0;margin:24px 0;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden
+}
+.tl-item{flex:1;padding:14px 10px;text-align:center;position:relative;transition:background .2s;cursor:default}
+.tl-item+.tl-item::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:1px;background:var(--border)}
+.tl-item.active{background:rgba(0,229,160,.06)}
+.tl-time{font-family:var(--font-mono);font-size:.72rem;color:var(--accent);font-weight:500;margin-bottom:4px}
+.tl-label{font-size:.78rem;color:var(--text-dim)}
+@media(max-width:600px){.tl-label{display:none}.tl-item{padding:12px 6px}}
+
+/* ── Animations ──────────────────────────────────────────────── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.reveal{opacity:0;transform:translateY(20px);transition:all .5s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+footer{
+  border-top:1px solid var(--border);padding:40px 0;margin-top:60px;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:16px
+}
+footer p{font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim)}
+
+/* ── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
+/* ── Table general ───────────────────────────────────────────── */
+table{width:100%;border-collapse:collapse;margin:20px 0;font-size:.875rem}
+th{background:var(--surface2);border:1px solid var(--border);padding:10px 14px;
+   font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim);text-align:left;text-transform:uppercase;letter-spacing:.06em}
+td{border:1px solid var(--border);padding:10px 14px;color:var(--text)}
+tr:hover td{background:rgba(255,255,255,.015)}
+a{color:var(--accent2);text-decoration:none}
+a:hover{text-decoration:underline;color:var(--accent)}
+p{margin-bottom:12px}
+ul,ol{padding-left:22px}
+li{margin-bottom:6px;font-size:.9rem}
+strong{color:var(--text-bright);font-weight:500}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+<div class="progress-bar" id="pbar"></div>
+
+<!-- Floating TOC dots -->
+<nav class="toc-float" id="toc">
+  <button class="toc-dot" data-target="hero" data-label="Overview"></button>
+  <button class="toc-dot" data-target="disclaimer" data-label="Disclaimer"></button>
+  <button class="toc-dot" data-target="glossary" data-label="Glossary"></button>
+  <button class="toc-dot" data-target="analysis" data-label="Algorithm Analysis"></button>
+  <button class="toc-dot" data-target="scanner" data-label="Port Scanner"></button>
+  <button class="toc-dot" data-target="detector" data-label="BF Detector"></button>
+  <button class="toc-dot" data-target="logger" data-label="Event Logger"></button>
+  <button class="toc-dot" data-target="integration" data-label="Integration"></button>
+  <button class="toc-dot" data-target="deliverables" data-label="Deliverables"></button>
+  <button class="toc-dot" data-target="resources" data-label="Resources"></button>
+</nav>
+
+<div class="wrapper">
+
+<!-- ╔═══════════════ HERO ══════════════╗ -->
+<section class="hero" id="hero">
+  <div class="hero-meta">
+    <span class="tag tag-week">Week 06</span>
+    <span class="tag tag-mod">Module 05</span>
+    <span class="tag tag-type">Project Component 5</span>
+  </div>
+  <h1>Security<br><span>Scanner Module</span></h1>
+  <p class="hero-sub">
+    Brute-force enumeration, throttled port scanning, sliding-window attack detection,
+    and structured security event logging — built from the ground up.
+  </p>
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-val">≈ 4 h</span>
+      <span class="stat-label">Total Work</span>
+    </div>
+    <div class="stat" style="--accent:#0090ff">
+      <span class="stat-val">1-2-1</span>
+      <span class="stat-label">Ponderation</span>
+    </div>
+    <div class="stat" style="--accent:#f5a623">
+      <span class="stat-val">3</span>
+      <span class="stat-label">Core Modules</span>
+    </div>
+    <div class="stat" style="--accent:#ff4d6d">
+      <span class="stat-val">11</span>
+      <span class="stat-label">TODOs to solve</span>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline" style="margin-top:32px">
+    <div class="tl-item"><div class="tl-time">20 min</div><div class="tl-label">Setup & Glossary</div></div>
+    <div class="tl-item"><div class="tl-time">25 min</div><div class="tl-label">Analysis</div></div>
+    <div class="tl-item active"><div class="tl-time">50 min</div><div class="tl-label">Port Scanner</div></div>
+    <div class="tl-item"><div class="tl-time">45 min</div><div class="tl-label">BF Detector</div></div>
+    <div class="tl-item"><div class="tl-time">30 min</div><div class="tl-label">Logger</div></div>
+    <div class="tl-item"><div class="tl-time">25 min</div><div class="tl-label">Integration</div></div>
+    <div class="tl-item"><div class="tl-time">15 min</div><div class="tl-label">Reflection</div></div>
+  </div>
+
+  <!-- Project context -->
+  <div class="project-card" style="margin-top:32px">
+    <h3>🏗️ Spanning Project: Network Infrastructure Automation Suite</h3>
+    <ul class="phase-list">
+      <li class="phase-item">
+        <div class="phase-dot done"></div>
+        <div><strong>Phase 1 (Week 7 Demo)</strong> — Log Analyzer + Traffic Sorter + IP Lookup</div>
+      </li>
+      <li class="phase-item">
+        <div class="phase-dot active"></div>
+        <div><strong>Phase 2 → Now (Week 6)</strong> — <span style="color:var(--accent4)">Security Scanner Module ← YOU ARE HERE</span></div>
+      </li>
+      <li class="phase-item">
+        <div class="phase-dot todo"></div>
+        <div><strong>Final (Week 16)</strong> — Complete Network Infrastructure Automation Suite</div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+
+<!-- ╔═══════════════ DISCLAIMER ══════════════╗ -->
+<section class="sec" id="disclaimer">
+  <div class="sec-label">Before you start</div>
+  <h2>⚠️ Important Disclaimer</h2>
+
+  <div class="alert alert-warn">
+    <div class="alert-title">🔒 EDUCATIONAL USE ONLY — CONTROLLED ENVIRONMENT</div>
+    <p>This exercise is intended strictly for academic learning within a sandboxed lab environment. The techniques covered here — port scanning, brute-force simulation, security event monitoring — are <strong>standard, well-documented subjects</strong> in computer science curricula worldwide.</p>
+    <ul style="margin-top:10px">
+      <li><strong>Only scan systems you own or have explicit written permission to test.</strong></li>
+      <li>Work exclusively on <code class="inline">127.0.0.1</code> (localhost), virtual machines, or the course-provided lab network.</li>
+      <li>Never deploy these tools on public infrastructure or institutional networks without authorization.</li>
+      <li>Covered openly by <a href="https://owasp.org/" target="_blank">OWASP</a>, <a href="https://www.nist.gov/cybersecurity" target="_blank">NIST</a>, <a href="https://www.comptia.org/certifications/security" target="_blank">CompTIA Security+</a>, and <a href="https://www.eccouncil.org/train-certify/certified-ethical-hacker-ceh/" target="_blank">CEH</a>.</li>
+    </ul>
+  </div>
+
+  <div class="alert alert-tip">
+    <div class="alert-title">🔬 Research Freedom — All Tools Are Open & Replaceable</div>
+    <p>Every tool, library, and technique mentioned in this document is an <strong>illustrative example only</strong>. You are strongly encouraged — and expected — to:</p>
+    <ul>
+      <li>Research alternatives thoroughly before choosing an approach</li>
+      <li>Evaluate different open-source options and compare their trade-offs</li>
+      <li>Create your own implementations from scratch if you prefer</li>
+      <li>Use any language you are comfortable with (Python is suggested, not required)</li>
+    </ul>
+    <p style="margin-top:10px"><strong>Scientific curiosity and independent thinking are the hallmarks of a great computer scientist.</strong></p>
+  </div>
+</section>
+
+
+<!-- ╔═══════════════ GLOSSARY ══════════════╗ -->
+<section class="sec" id="glossary">
+  <div class="sec-label">Part 0</div>
+  <h2>📚 Beginner's Glossary</h2>
+  <p style="color:var(--text-dim)">Every term from this module explained from scratch. Click a card to expand the full explanation.</p>
+
+  <div class="gloss-grid">
+
+    <div class="gloss-card" onclick="toggleGloss(this)">
+      <div class="gloss-term"><span class="gloss-icon">🌐</span> Network Port</div>
+      <div class="gloss-body">A numbered "door" (0–65,535) on a computer through which a specific type of network conversation flows.</div>
+      <div class="gloss-body hidden">
+        <br>Think of an IP address (Internet Protocol address) as a building's street address, and ports as numbered doors inside. Port 22 = SSH (Secure Shell), Port 80 = HTTP (HyperText Transfer Protocol), Port 443 = HTTPS (HTTP Secure). The official registry is maintained by <a href="https://www.iana.org/assignments/service-names-port-numbers/" target="_blank">IANA (Internet Assigned Numbers Authority)</a>.<br><br>
+        Ports 1–1023 = well-known. Ports 1024–49151 = registered. Ports 49152–65535 = dynamic/private.
+      </div>
+      <span class="gloss-expand">Show more ↓</span>
+    </div>
+
+    <div class="gloss-card" onclick="toggleGloss(this)">
+      <div class="gloss-term"><span class="gloss-icon">🔍</span> Port Scanner</div>
+      <div class="gloss-body">A program that probes a range of port numbers to discover which services are running on a machine.</div>
+      <div class="gloss-body hidden">
+        <br>A scanner attempts to connect to each port and records whether it is <strong>open</strong> (service listening), <strong>closed</strong> (nothing listening), or <strong>filtered</strong> (firewall blocks the probe). Sysadmins (system administrators) use scanners to audit their own infrastructure. The most widely cited open-source tool is <a href="https://nmap.org/" target="_blank">Nmap (Network Mapper)</a>. In this exercise, you build your own.
+      </div>
+      <span class="gloss-expand">Show more ↓</span>
+    </div>
+
+    <div class="gloss-card" onclick="toggleGloss(this)">
+      <div class="gloss-term"><span class="gloss-icon">🐢</span> Throttling</div>
+      <div class="gloss-body">Intentionally slowing an operation by inserting delays, limiting concurrency, or batching requests.</div>
+      <div class="gloss-body hidden">
+        <br>Without throttling, a port scanner fires thousands of connections per second, causing network congestion and triggering IDS (Intrusion Detection System) alerts. By inserting <code class="inline">sleep()</code> calls or limiting concurrent threads, the scanner becomes controllable. Same principle as API (Application Programming Interface) rate limiting, web scraping etiquette, and database connection pooling.<br><br>
+        Big-O stays O(n) (linear — scales with the number of ports), but real wall-clock time grows proportionally with the delay.
+      </div>
+      <span class="gloss-expand">Show more ↓</span>
+    </div>
+
+    <div class="gloss-card" onclick="toggleGloss(this)">
+      <div class="gloss-term"><span class="gloss-icon">💥</span> Brute-Force Attack</div>
+      <div class="gloss-body">Trying every possible password/key combination exhaustively until one works.</div>
+      <div class="gloss-body hidden">
+        <br>In algorithms, brute-force means systematic enumeration of all candidates. Applied to logins: try millions of passwords. A <strong>dictionary attack</strong> is a smarter variant using known common passwords. <strong>Credential stuffing</strong> uses leaked credentials from data breaches (tracked by <a href="https://haveibeenpwned.com/" target="_blank">Have I Been Pwned</a>).<br><br>
+        Complexity: O(A^L) (exponential — grows extremely fast with password length L over alphabet of size A). This is why long passwords matter. Your job: <strong>detect</strong> the attack, not perform it.
+      </div>
+      <span class="gloss-expand">Show more ↓</span>
+    </div>
+
+    <div class="gloss-card" onclick="toggleGloss(this)">
+      <div class="gloss-term"><span class="gloss-icon">📋</span> Security Event Logger</div>
+      <div class="gloss-body">A component that records security-relevant events (logins, scans, alerts) to a persistent structured log.</div>
+      <div class="gloss-body hidden">
+        <br>Logs are foundational to SIEM (Security Information and Event Management) systems, forensic investigation, and compliance with regulations like <a href="https://gdpr.eu/" target="_blank">GDPR (General Data Protection Regulation)</a> and <a href="https://www.pcisecuritystandards.org/" target="_blank">PCI DSS (Payment Card Industry Data Security Standard)</a>.<br><br>
+        Each entry has: timestamp, severity level (INFO/WARNING/CRITICAL), source IP, event type, message. Write complexity: O(1) (constant — append to list). Query complexity depends on the data structure chosen.
+      </div>
+      <span class="gloss-expand">Show more ↓</span>
+    </div>
+
+    <div class="gloss-card" onclick="toggleGloss(this)">
+      <div class="gloss-term"><span class="gloss-icon">🪟</span> Sliding Window</div>
+      <div class="gloss-body">An algorithm technique that maintains a moving range of recent data, discarding entries outside the window.</div>
+      <div class="gloss-body hidden">
+        <br>For brute-force detection: instead of counting all failures ever, count failures in the last 60 seconds. As time advances, the "window" slides forward and old events fall off the left edge. Implemented efficiently with a <code class="inline">collections.deque</code> (double-ended queue): append to right (new events), remove from left (old events). Amortized O(1) (constant amortized — each event is added and removed at most once) per event.
+      </div>
+      <span class="gloss-expand">Show more ↓</span>
+    </div>
+
+    <div class="gloss-card" onclick="toggleGloss(this)">
+      <div class="gloss-term"><span class="gloss-icon">🔌</span> TCP Socket</div>
+      <div class="gloss-body">An endpoint for a TCP network connection, identified by (IP address, port) pair.</div>
+      <div class="gloss-body hidden">
+        <br>TCP (Transmission Control Protocol) is a reliable, ordered protocol. Connecting uses a three-way handshake: SYN → SYN-ACK → ACK. If a port is open, the server responds with SYN-ACK. If closed, it replies with RST (reset). If filtered (firewall), no response (timeout). Python's <code class="inline">socket.connect_ex()</code> returns 0 on success, non-zero on failure — perfect for scanning.
+      </div>
+      <span class="gloss-expand">Show more ↓</span>
+    </div>
+
+    <div class="gloss-card" onclick="toggleGloss(this)">
+      <div class="gloss-term"><span class="gloss-icon">🗺️</span> Attack Surface</div>
+      <div class="gloss-body">The set of all entry points an attacker could potentially exploit on a system.</div>
+      <div class="gloss-body hidden">
+        <br>Every open port is a potential entry point. A sysadmin's goal is to minimize the attack surface: close ports for services that aren't needed, put firewalls in front of everything else, and monitor what remains. Port scanning your own system lets you see exactly what an outside attacker would see. Guidance from <a href="https://owasp.org/" target="_blank">OWASP</a> and <a href="https://www.nist.gov/cybersecurity" target="_blank">NIST</a>.
+      </div>
+      <span class="gloss-expand">Show more ↓</span>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ╔═══════════════ ALGORITHM ANALYSIS ══════════════╗ -->
+<section class="sec" id="analysis">
+  <div class="sec-label">Part 1</div>
+  <h2>📐 Algorithmic Analysis</h2>
+  <p style="color:var(--text-dim)">Think before you code. Answer these in writing — they are graded.</p>
+
+  <h3>1.1 Complexity of Basic Port Scan</h3>
+
+  <div class="code-wrap">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+      <span class="code-lang">Pseudocode</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><span class="cm"># n = (end_port - start_port)</span>
+<span class="kw">function</span> <span class="fn">scan_ports</span>(target_ip, start_port, end_port):
+    open_ports ← <span class="fn">empty_list</span>()
+    <span class="kw">for</span> port <span class="kw">from</span> start_port <span class="kw">to</span> end_port:        <span class="cm"># n iterations</span>
+        <span class="kw">if</span> <span class="fn">can_connect</span>(target_ip, port):           <span class="cm"># O(1) per probe</span>
+            open_ports.<span class="fn">append</span>(port)
+    <span class="kw">return</span> open_ports</pre>
+  </div>
+
+  <div class="question">
+    <div class="question-label">✏️ Question 1.1</div>
+    <p>Given that <code class="inline">end_port − start_port = n</code>, what is the Big-O notation for the algorithm above? Justify in one sentence.</p>
+    <textarea class="answer-box" placeholder="Your answer: O( ? ) because …"></textarea>
+  </div>
+
+  <h3>1.2 Throttling — Complexity vs. Wall-Clock Time</h3>
+
+  <div class="code-wrap">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+      <span class="code-lang">Pseudocode</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><span class="kw">function</span> <span class="fn">scan_ports_throttled</span>(target_ip, start_port, end_port, delay_s):
+    open_ports ← <span class="fn">empty_list</span>()
+    <span class="kw">for</span> port <span class="kw">from</span> start_port <span class="kw">to</span> end_port:
+        <span class="kw">if</span> <span class="fn">can_connect</span>(target_ip, port):
+            open_ports.<span class="fn">append</span>(port)
+        <span class="fn">sleep</span>(delay_s)         <span class="cm"># throttle: pause between probes</span>
+    <span class="kw">return</span> open_ports</pre>
+  </div>
+
+  <div class="question">
+    <div class="question-label">✏️ Question 1.2</div>
+    <p><strong>a)</strong> Does adding <code class="inline">sleep(delay_s)</code> change the Big-O complexity? Explain why or why not.</p>
+    <p><strong>b)</strong> If scanning 1,000 ports at 0.1 s delay each, what is the minimum wall-clock time?</p>
+    <p><strong>c)</strong> Complete the throttling measurement table below after building the scanner (Part 2).</p>
+    <textarea class="answer-box" placeholder="a) O( ? ) because … / b) ? seconds / c) see table"></textarea>
+  </div>
+
+  <h3>1.3 Data Structure Selection for the Logger</h3>
+
+  <table class="complexity-table">
+    <thead>
+      <tr>
+        <th>Data Structure</th>
+        <th>Insert</th>
+        <th>Lookup by Time</th>
+        <th>Sorted Retrieval</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Unsorted list</td>
+        <td><span class="o-badge o-1">O(1)</span> constant — append</td>
+        <td><span class="o-badge o-n">O(n)</span> linear — full scan</td>
+        <td><span class="o-badge o-nlog">O(n log n)</span> sort first</td>
+      </tr>
+      <tr>
+        <td>Sorted list</td>
+        <td><span class="o-badge o-n">O(n)</span> linear — shift</td>
+        <td><span class="o-badge o-log">O(log n)</span> binary search</td>
+        <td><span class="o-badge o-n">O(n)</span> already sorted</td>
+      </tr>
+      <tr>
+        <td>Hash table</td>
+        <td><span class="o-badge o-1">O(1)</span> average</td>
+        <td><span class="o-badge o-1">O(1)</span> average</td>
+        <td><span class="o-badge o-nlog">O(n log n)</span> sort keys</td>
+      </tr>
+      <tr>
+        <td>BST (Binary Search Tree)</td>
+        <td><span class="o-badge o-log">O(log n)</span> average</td>
+        <td><span class="o-badge o-log">O(log n)</span> average</td>
+        <td><span class="o-badge o-n">O(n)</span> in-order traversal</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="question">
+    <div class="question-label">✏️ Question 1.3</div>
+    <p>Your logger needs: <strong>(1)</strong> fast appends and <strong>(2)</strong> time-range queries by IP. Which structure(s) would you choose? Is a hybrid approach possible?</p>
+    <textarea class="answer-box" placeholder="I would choose … because …"></textarea>
+  </div>
+</section>
+
+
+<!-- ╔═══════════════ PORT SCANNER ══════════════╗ -->
+<section class="sec" id="scanner">
+  <div class="sec-label">Part 2 · ~50 min</div>
+  <h2>💻 Build: Throttled Port Scanner</h2>
+
+  <div class="alert alert-info">
+    <div class="alert-title">ℹ️ TCP Three-Way Handshake</div>
+    <p>A TCP (Transmission Control Protocol) connection uses: <strong>SYN → SYN-ACK → ACK</strong>. If a port is open, you get SYN-ACK back. If closed, you get RST (reset). If filtered (firewall), you get nothing (timeout). Python's <code class="inline">socket.connect_ex()</code> returns <code class="inline">0</code> on success.</p>
+  </div>
+
+  <h3>Step 1 — config.py</h3>
+  <p style="color:var(--text-dim);font-size:.9rem">Shared constants used by all three modules. Read every comment before starting.</p>
+
+  <div class="code-wrap">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+      <span class="code-lang">Python · config.py</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><span class="cm"># config.py — Shared configuration for the Security Scanner Module</span>
+<span class="cm"># Scan ONLY systems you own or have explicit permission to test.</span>
+
+<span class="cm"># ── Scanner ────────────────────────────────────────────────────</span>
+<span class="cl">DEFAULT_TARGET</span>       = <span class="st">"127.0.0.1"</span>    <span class="cm"># localhost — safe default</span>
+<span class="cl">DEFAULT_PORT_RANGE</span>   = (<span class="nu">1</span>, <span class="nu">1024</span>)       <span class="cm"># well-known ports</span>
+<span class="cl">SCAN_TIMEOUT_SEC</span>     = <span class="nu">0.5</span>            <span class="cm"># seconds per connection attempt</span>
+<span class="cl">THROTTLE_DELAY_SEC</span>   = <span class="nu">0.05</span>           <span class="cm"># pause BETWEEN port probes</span>
+<span class="cl">MAX_CONCURRENT_SCANS</span> = <span class="nu">10</span>             <span class="cm"># max simultaneous connections</span>
+
+<span class="cm"># ── Brute-Force Detector ───────────────────────────────────────</span>
+<span class="cl">BF_WINDOW_SECONDS</span>   = <span class="nu">60</span>             <span class="cm"># sliding window length</span>
+<span class="cl">BF_THRESHOLD</span>        = <span class="nu">10</span>             <span class="cm"># failures before alert fires</span>
+<span class="cl">BF_LOCKOUT_SECONDS</span>  = <span class="nu">300</span>            <span class="cm"># lockout duration</span>
+
+<span class="cm"># ── Logger ─────────────────────────────────────────────────────</span>
+<span class="cl">LOG_FILE_PATH</span>       = <span class="st">"logs/security_events.log"</span>
+<span class="cl">LOG_LEVELS</span>          = [<span class="st">"DEBUG"</span>, <span class="st">"INFO"</span>, <span class="st">"WARNING"</span>, <span class="st">"CRITICAL"</span>]
+<span class="cl">MAX_LOG_ENTRIES_MEM</span> = <span class="nu">10_000</span></pre>
+  </div>
+
+  <h3>Step 2 — PortScanner Class Skeleton</h3>
+  <p style="color:var(--text-dim);font-size:.9rem">Fill in every <code class="inline"># TODO</code> section. The skeleton specifies exactly what each method must do.</p>
+
+  <div class="code-wrap">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+      <span class="code-lang">Python · port_scanner.py (key methods)</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><span class="kw">def</span> <span class="fn">_probe_port</span>(<span class="cl">self</span>, port):
+    <span class="st">"""Attempt TCP connection; return ScanResult with open/closed status."""</span>
+    t_start = <span class="fn">time.time</span>()
+    sock = <span class="fn">socket.socket</span>(socket.<span class="cl">AF_INET</span>, socket.<span class="cl">SOCK_STREAM</span>)
+    sock.<span class="fn">settimeout</span>(<span class="cl">self</span>.timeout)
+    result_code = sock.<span class="fn">connect_ex</span>((<span class="cl">self</span>.target, port))  <span class="cm"># 0 = open</span>
+    sock.<span class="fn">close</span>()
+    latency_ms = (<span class="fn">time.time</span>() - t_start) * <span class="nu">1000</span>
+    status  = <span class="st">"open"</span> <span class="kw">if</span> result_code == <span class="nu">0</span> <span class="kw">else</span> <span class="st">"closed"</span>
+    service = <span class="cl">KNOWN_SERVICES</span>.<span class="fn">get</span>(port, <span class="st">"unknown"</span>)
+    <span class="kw">return</span> <span class="cl">ScanResult</span>(port, status, service, latency_ms)
+
+<span class="kw">def</span> <span class="fn">scan_range</span>(<span class="cl">self</span>, start_port, end_port, verbose=<span class="kw">True</span>):
+    <span class="st">"""Brute-force: try every port; sleep(throttle) between each."""</span>
+    <span class="kw">for</span> port <span class="kw">in</span> <span class="fn">range</span>(start_port, end_port + <span class="nu">1</span>):
+        result = <span class="cl">self</span>.<span class="fn">_probe_port</span>(port)     <span class="cm"># probe</span>
+        <span class="cl">self</span>.results.<span class="fn">append</span>(result)          <span class="cm"># store</span>
+        <span class="kw">if</span> verbose <span class="kw">and</span> result.status == <span class="st">"open"</span>:
+            <span class="fn">print</span>(result)                    <span class="cm"># report</span>
+        <span class="fn">time.sleep</span>(<span class="cl">self</span>.throttle_delay)      <span class="cm"># ← THROTTLE</span>
+    <span class="kw">return</span> <span class="cl">self</span>.results</pre>
+  </div>
+
+  <h3>Step 3 — Throttling Measurement Experiment</h3>
+  <p style="color:var(--text-dim);font-size:.9rem">Run the scanner three times and record your measurements in the table below.</p>
+
+  <table>
+    <thead>
+      <tr><th>Throttle Delay</th><th>Ports Scanned</th><th>Wall-Clock Time</th><th>Avg ms/port</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code class="inline">0.001 s</code></td><td>200</td><td><em style="color:var(--text-dim)">measure →</em></td><td></td></tr>
+      <tr><td><code class="inline">0.010 s</code></td><td>200</td><td><em style="color:var(--text-dim)">measure →</em></td><td></td></tr>
+      <tr><td><code class="inline">0.100 s</code></td><td>200</td><td><em style="color:var(--text-dim)">measure →</em></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <div class="question">
+    <div class="question-label">✏️ Question 2.3</div>
+    <p>Plot or sketch the relationship between throttle delay and wall-clock time. Is it linear? What does this say about the real-world cost of throttling even though the Big-O complexity — O(n) (linear — proportional to port count) — stays the same?</p>
+    <textarea class="answer-box" placeholder="The relationship is … because …"></textarea>
+  </div>
+
+  <div class="alert alert-tip">
+    <div class="alert-title">⭐ Bonus: Concurrent Port Scanner</div>
+    <p>Research Python's <code class="inline">concurrent.futures.ThreadPoolExecutor</code> or <code class="inline">asyncio</code> and implement a concurrent version of <code class="inline">scan_range</code>. Constraint: respect <code class="inline">MAX_CONCURRENT_SCANS</code> from config. How does concurrency change the wall-clock time formula?</p>
+  </div>
+</section>
+
+
+<!-- ╔═══════════════ BRUTE FORCE DETECTOR ══════════════╗ -->
+<section class="sec" id="detector">
+  <div class="sec-label">Part 3 · ~45 min</div>
+  <h2>🚨 Build: Brute-Force Attack Detector</h2>
+
+  <p style="color:var(--text-dim)">Under normal use, a user might fail 2–3 times. An attack generates hundreds of failures per minute. Your detector finds this statistical anomaly using a sliding window over authentication events.</p>
+
+  <h3>Sliding Window Algorithm</h3>
+
+  <div class="code-wrap">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+      <span class="code-lang">Pseudocode — Sliding Window Detection</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><span class="kw">function</span> <span class="fn">process_event</span>(event):
+    <span class="kw">if</span> event.success: <span class="kw">return</span> <span class="cl">None</span>          <span class="cm"># ignore successful logins</span>
+
+    window = failure_windows[event.ip]    <span class="cm"># deque for this IP</span>
+    window.<span class="fn">append</span>(event.timestamp)        <span class="cm"># add new failure</span>
+
+    cutoff = <span class="fn">now</span>() - window_seconds
+    <span class="kw">while</span> window <span class="kw">and</span> window[<span class="nu">0</span>] &lt; cutoff:   <span class="cm"># evict old events</span>
+        window.<span class="fn">popleft</span>()                  <span class="cm"># O(1) amortized</span>
+
+    <span class="kw">if</span> <span class="fn">len</span>(window) >= threshold:
+        <span class="kw">return</span> <span class="fn">fire_alert</span>(event.ip)       <span class="cm"># 🚨 brute-force detected!</span>
+    <span class="kw">return</span> <span class="cl">None</span></pre>
+  </div>
+
+  <h3>Key Implementation: <code class="inline">_evict_old_events()</code></h3>
+
+  <div class="code-wrap">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+      <span class="code-lang">Python · brute_force_detector.py</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><span class="kw">def</span> <span class="fn">_evict_old_events</span>(<span class="cl">self</span>, ip_address):
+    <span class="st">"""Remove failure timestamps older than window_seconds from deque front."""</span>
+    window = <span class="cl">self</span>.failure_windows[ip_address]  <span class="cm"># collections.deque</span>
+    cutoff = <span class="fn">time.time</span>() - <span class="cl">self</span>.window_seconds
+    <span class="kw">while</span> window <span class="kw">and</span> window[<span class="nu">0</span>] &lt; cutoff:
+        window.<span class="fn">popleft</span>()   <span class="cm"># O(1) — deque left-removal is constant time</span>
+    <span class="cm"># Each timestamp is added once and removed once → amortized O(1) total</span></pre>
+  </div>
+
+  <div class="question">
+    <div class="question-label">✏️ Question 3.4</div>
+    <p><strong>a)</strong> Why is <code class="inline">collections.deque</code> better than a regular list for the sliding window? Compare the Big-O of <code class="inline">popleft()</code> for each.</p>
+    <p><strong>b)</strong> Your detector uses a single threshold. Propose one enhancement that would reduce <em>false positives</em> (wrongly blocking a legitimate user) without increasing false negatives (missing real attacks).</p>
+    <p><strong>c)</strong> A sophisticated attacker slows down to 9 failures per 60 seconds, just below your threshold. How would you detect this "low-and-slow" attack?</p>
+    <textarea class="answer-box" placeholder="a) deque popleft is O(1) because … / b) I would add … / c) A cumulative counter over longer window …"></textarea>
+  </div>
+
+  <h3>Simulation Helper</h3>
+  <div class="code-wrap">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+      <span class="code-lang">Python · simulation</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><span class="cm"># Run to test your detector — expected output: alert at attempt #10 (or threshold)</span>
+<span class="kw">if</span> __name__ == <span class="st">"__main__"</span>:
+    detector = <span class="cl">BruteForceDetector</span>(window_seconds=<span class="nu">30</span>, threshold=<span class="nu">5</span>)
+    <span class="fn">simulate_attack</span>(detector, attacker_ip=<span class="st">"192.168.1.100"</span>, num_attempts=<span class="nu">20</span>)</pre>
+  </div>
+</section>
+
+
+<!-- ╔═══════════════ EVENT LOGGER ══════════════╗ -->
+<section class="sec" id="logger">
+  <div class="sec-label">Part 4 · ~30 min</div>
+  <h2>📋 Build: Security Event Logger</h2>
+
+  <p style="color:var(--text-dim)">A buffered, dual-output logger: in-memory for fast queries, JSON Lines file on disk for persistence.</p>
+
+  <h3>Architecture</h3>
+
+  <div class="code-wrap">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+      <span class="code-lang">Architecture Diagram</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre>Incoming Event
+      ↓  log()  [O(1) — constant append]
+  In-Memory Buffer  (list of SecurityEvent objects)
+      ↓  flush()  [triggered at MAX_LOG_ENTRIES_MEM or manually]
+  JSON Lines File on Disk  (one JSON object per line)
+      ↑  load_from_disk()  [replay historical events]
+
+  Query path: buffer.filter(ip / level / time) → O(n) linear scan
+              acceptable for ≤ MAX_LOG_ENTRIES_MEM entries</pre>
+  </div>
+
+  <h3>JSON Lines Format</h3>
+  <div class="code-wrap">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+      <span class="code-lang">JSON Lines · logs/security_events.log</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre>{"event_id": 1, "level": "INFO",     "event_type": "SYSTEM_START",  "source_ip": "0.0.0.0",       "message": "Logger initialized",              "timestamp": "2024-03-15T10:00:00"}
+{"event_id": 2, "level": "WARNING",  "event_type": "LOGIN_FAILURE", "source_ip": "10.0.0.99",     "message": "Failed login for root",           "timestamp": "2024-03-15T10:01:15"}
+{"event_id": 3, "level": "CRITICAL", "event_type": "BRUTE_FORCE",  "source_ip": "10.0.0.99",     "message": "15 failures in 60s — lockout",    "timestamp": "2024-03-15T10:01:22"}</pre>
+  </div>
+
+  <div class="question">
+    <div class="question-label">✏️ Question 4.2</div>
+    <p><strong>a)</strong> Why JSON Lines (one object per line) rather than a single large JSON array? Think about appending new entries and reading only the last 100 lines of a 10 GB log file.</p>
+    <p><strong>b)</strong> In <code class="inline">get_summary()</code>, building <code class="inline">top_source_ips</code> requires counting and sorting. What is the Big-O? How could you maintain this incrementally to reduce it?</p>
+    <textarea class="answer-box" placeholder="a) JSON Lines allows append-only writes without … / b) O( ? ) because … incremental approach: …"></textarea>
+  </div>
+</section>
+
+
+<!-- ╔═══════════════ INTEGRATION ══════════════╗ -->
+<section class="sec" id="integration">
+  <div class="sec-label">Part 5 · ~25 min</div>
+  <h2>🔗 Integration: Security Scanner Module</h2>
+
+  <p style="color:var(--text-dim)">Wire all three components into a unified module with a clean public interface.</p>
+
+  <div class="code-wrap">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+      <span class="code-lang">Python · security_module.py (public interface)</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><span class="kw">class</span> <span class="cl">SecurityScannerModule</span>:
+    <span class="st">"""
+    Public Interface:
+      run_port_scan(target, port_range)  → list of open ports
+      report_auth_event(ip, user, ok)   → alert dict or None
+      get_recent_alerts(n)              → list[SecurityEvent]
+      export_report(filepath)           → writes JSON report
+    """</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="cl">self</span>, target=<span class="cl">DEFAULT_TARGET</span>):
+        <span class="cl">self</span>.scanner  = <span class="cl">PortScanner</span>(target=target)
+        <span class="cl">self</span>.detector = <span class="cl">BruteForceDetector</span>()
+        <span class="cl">self</span>.logger   = <span class="cl">SecurityEventLogger</span>()</pre>
+  </div>
+
+  <h3>Expected Integration Demo Output</h3>
+  <div class="code-wrap">
+    <div class="code-header">
+      <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+      <span class="code-lang">Expected Terminal Output</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre>══════════════════════════════════════════════════════════════════════
+  SECURITY SCANNER MODULE — Integration Demo
+══════════════════════════════════════════════════════════════════════
+
+[1/3] Running port scan...
+[SCAN START] Target: 127.0.0.1 | Ports: 1-200 | Throttle: 0.05s/port
+  OPEN port  22  SSH    latency=0.4ms
+  OPEN port  80  HTTP   latency=0.3ms
+  Found 2 open ports: [22, 80]
+
+[2/3] Processing authentication events...
+  [10:01:22] WARNING  | LOGIN_FAILURE  | 10.0.0.99  | Failed login (admin)
+  [10:01:22] CRITICAL | BRUTE_FORCE    | 10.0.0.99  | 10 failures in 60s — lockout
+
+[3/3] Exporting security report...
+✅ Integration demo complete. Check logs/ directory for output files.</pre>
+  </div>
+
+  <h3>Complexity Summary — Fill In After Implementation</h3>
+  <table class="complexity-table">
+    <thead>
+      <tr><th>Module</th><th>Operation</th><th>Complexity</th><th>Why?</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>PortScanner</td><td><code class="inline">scan_range(n ports)</code></td><td><span class="o-badge o-n">O(n)</span></td><td>n iterations, O(1) per probe</td></tr>
+      <tr><td>PortScanner</td><td><code class="inline">get_open_ports()</code></td><td><span class="o-badge o-n">O(n)</span></td><td>Linear filter over results list</td></tr>
+      <tr><td>BruteForceDetector</td><td><code class="inline">process_event()</code></td><td><span class="o-badge o-1">O(1) amortized</span></td><td>Each timestamp added/removed once</td></tr>
+      <tr><td>SecurityEventLogger</td><td><code class="inline">log()</code></td><td><span class="o-badge o-1">O(1)</span></td><td>List append is constant</td></tr>
+      <tr><td>SecurityEventLogger</td><td><code class="inline">query()</code></td><td><span class="o-badge o-nlog">O(n log n)</span></td><td>Filter O(n) + sort O(n log n)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="question">
+    <div class="question-label">✏️ Question 6.2 — Final Reflection</div>
+    <p><strong>a)</strong> Your scanner uses brute-force (tries every port). Describe one smarter approach that would be more efficient. What additional information would it need?</p>
+    <p><strong>b)</strong> Compare sliding window detection vs. a simple daily counter. Give a concrete attack scenario where each approach wins.</p>
+    <p><strong>c)</strong> If processing 10,000 authentication events per second, what would be the first bottleneck? How would you address it?</p>
+    <p><strong>d)</strong> Research one real open-source SIEM (Security Information and Event Management) platform (<a href="https://wazuh.com/" target="_blank">Wazuh</a>, <a href="https://graylog.org/" target="_blank">Graylog</a>, <a href="https://opensearch.org/" target="_blank">OpenSearch</a>, <a href="https://www.elastic.co/security/siem" target="_blank">Elastic SIEM</a>) and identify two algorithmic challenges it solves at scale that your implementation does not.</p>
+    <textarea class="answer-box" style="min-height:140px" placeholder="a) … / b) … / c) … / d) I researched [name] …"></textarea>
+  </div>
+</section>
+
+
+<!-- ╔═══════════════ DELIVERABLES ══════════════╗ -->
+<section class="sec" id="deliverables">
+  <div class="sec-label">Submission</div>
+  <h2>📦 Deliverables Checklist</h2>
+  <p style="color:var(--text-dim);margin-bottom:6px">Click each item to mark it complete. Progress is saved in your session.</p>
+
+  <ul class="checklist" id="checklist">
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><span class="check-label"><code class="inline">port_scanner.py</code> — all TODOs resolved, documented</span></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><span class="check-label"><code class="inline">brute_force_detector.py</code> — all TODOs resolved, documented</span></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><span class="check-label"><code class="inline">event_logger.py</code> — all TODOs resolved, documented</span></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><span class="check-label"><code class="inline">security_module.py</code> — integration demo runs end-to-end</span></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><span class="check-label"><code class="inline">config.py</code> — all constants present</span></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><span class="check-label"><code class="inline">logs/security_events.log</code> — generated (JSON Lines file)</span></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><span class="check-label"><code class="inline">logs/security_report.json</code> — generated by <code class="inline">export_report()</code></span></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><span class="check-label">Throttling experiment table completed with real measurements</span></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><span class="check-label">All ✏️ questions answered in <code class="inline">ANSWERS.md</code> or code comments</span></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><span class="check-label"><code class="inline">README.md</code> — design decisions, how to run, all sources cited</span></li>
+  </ul>
+
+  <div id="progress-summary" style="margin-top:16px;font-family:var(--font-mono);font-size:.8rem;color:var(--text-dim)">
+    0 / 10 complete
+  </div>
+
+  <div class="alert alert-tip" style="margin-top:24px">
+    <div class="alert-title">🌟 Bonus Challenges</div>
+    <ul>
+      <li><strong>TLS fingerprinting:</strong> on port 443, extract SSL certificate CN (Common Name) and expiry date</li>
+      <li><strong>Visualization:</strong> plot open ports and brute-force frequency with <code class="inline">matplotlib</code> or any chart library</li>
+      <li><strong>SQLite backend:</strong> replace flat-file logger with <code class="inline">sqlite3</code>; rewrite <code class="inline">query()</code> as SQL</li>
+      <li><strong>Geo-IP enrichment:</strong> add country/city to each event using <a href="https://www.maxmind.com/en/geolite2/eula" target="_blank">MaxMind GeoLite2</a> or <a href="https://ip-api.com/" target="_blank">ip-api</a></li>
+      <li><strong>Async scanner:</strong> rewrite with <code class="inline">asyncio</code>; measure throughput gain</li>
+    </ul>
+  </div>
+</section>
+
+
+<!-- ╔═══════════════ RESOURCES ══════════════╗ -->
+<section class="sec" id="resources">
+  <div class="sec-label">References</div>
+  <h2>📖 Recommended Resources</h2>
+  <p style="color:var(--text-dim)">All links open official sources. Research beyond this list is strongly encouraged.</p>
+
+  <div class="resources">
+    <a class="resource-card" href="https://beej.us/guide/bgnet/" target="_blank">
+      <div class="resource-name">Beej's Guide to Network Programming</div>
+      <div class="resource-desc">TCP/IP sockets from first principles — clear, readable, free</div>
+      <div class="resource-url">beej.us/guide/bgnet/</div>
+    </a>
+    <a class="resource-card" href="https://owasp.org/www-project-web-security-testing-guide/" target="_blank">
+      <div class="resource-name">OWASP Testing Guide</div>
+      <div class="resource-desc">Industry-standard security assessment methodology</div>
+      <div class="resource-url">owasp.org</div>
+    </a>
+    <a class="resource-card" href="https://csrc.nist.gov/publications/detail/sp/800-115/final" target="_blank">
+      <div class="resource-name">NIST SP 800-115</div>
+      <div class="resource-desc">Technical Guide to Information Security Testing</div>
+      <div class="resource-url">csrc.nist.gov</div>
+    </a>
+    <a class="resource-card" href="https://nmap.org/" target="_blank">
+      <div class="resource-name">Nmap (Network Mapper)</div>
+      <div class="resource-desc">Industry-standard open-source port scanner — study for inspiration</div>
+      <div class="resource-url">nmap.org</div>
+    </a>
+    <a class="resource-card" href="https://docs.python.org/3/library/socket.html" target="_blank">
+      <div class="resource-name">Python socket docs</div>
+      <div class="resource-desc">Official documentation for TCP/UDP socket programming in Python</div>
+      <div class="resource-url">docs.python.org/3/library/socket.html</div>
+    </a>
+    <a class="resource-card" href="https://docs.python.org/3/library/collections.html" target="_blank">
+      <div class="resource-name">Python collections docs</div>
+      <div class="resource-desc">deque, Counter, defaultdict — structures used in this exercise</div>
+      <div class="resource-url">docs.python.org/3/library/collections.html</div>
+    </a>
+    <a class="resource-card" href="https://fail2ban.readthedocs.io/" target="_blank">
+      <div class="resource-name">Fail2ban documentation</div>
+      <div class="resource-desc">Production brute-force protection daemon — compare to your implementation</div>
+      <div class="resource-url">fail2ban.readthedocs.io</div>
+    </a>
+    <a class="resource-card" href="https://www.iana.org/assignments/service-names-port-numbers/" target="_blank">
+      <div class="resource-name">IANA Port Registry</div>
+      <div class="resource-desc">Official list of well-known and registered port assignments</div>
+      <div class="resource-url">iana.org/assignments/service-names-port-numbers/</div>
+    </a>
+    <a class="resource-card" href="https://wazuh.com/" target="_blank">
+      <div class="resource-name">Wazuh SIEM</div>
+      <div class="resource-desc">Open-source SIEM platform — see how production systems scale yours</div>
+      <div class="resource-url">wazuh.com</div>
+    </a>
+    <a class="resource-card" href="https://jsonlines.org/" target="_blank">
+      <div class="resource-name">JSON Lines specification</div>
+      <div class="resource-desc">The file format used by your event logger</div>
+      <div class="resource-url">jsonlines.org</div>
+    </a>
+  </div>
+</section>
+
+
+<footer>
+  <p>Week 06 · Module 05 · Security Scanner Module · Algorithms — CS Undergraduate</p>
+  <p style="color:var(--border2)">All tools and techniques are illustrative examples. Research, adapt, and create your own.</p>
+</footer>
+
+</div><!-- /wrapper -->
+
+
+<script>
+/* ── Progress bar ─────────────────────────────────────────── */
+window.addEventListener('scroll', () => {
+  const total = document.body.scrollHeight - window.innerHeight;
+  const pct   = (window.scrollY / total) * 100;
+  document.getElementById('pbar').style.width = pct + '%';
+});
+
+/* ── TOC dot active state ─────────────────────────────────── */
+const sections = ['hero','disclaimer','glossary','analysis','scanner','detector','logger','integration','deliverables','resources'];
+const dots     = document.querySelectorAll('.toc-dot');
+
+dots.forEach((dot, i) => {
+  dot.addEventListener('click', () => {
+    document.getElementById(sections[i]).scrollIntoView({behavior:'smooth'});
+  });
+});
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const idx = sections.indexOf(e.target.id);
+      if (idx >= 0) {
+        dots.forEach(d => d.classList.remove('active'));
+        dots[idx]?.classList.add('active');
+      }
+    }
+  });
+}, { threshold: 0.35 });
+
+sections.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) observer.observe(el);
+});
+
+/* ── Copy code button ─────────────────────────────────────── */
+function copyCode(btn) {
+  const pre = btn.closest('.code-wrap').querySelector('pre');
+  const text = pre.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 1800);
+  });
+}
+
+/* ── Glossary expand ──────────────────────────────────────── */
+function toggleGloss(card) {
+  const hidden  = card.querySelector('.gloss-body.hidden');
+  const expander = card.querySelector('.gloss-expand');
+  if (!hidden) return;
+  const isOpen = hidden.style.display === 'block';
+  hidden.style.display = isOpen ? 'none' : 'block';
+  expander.textContent  = isOpen ? 'Show more ↓' : 'Show less ↑';
+}
+
+/* ── Checklist ────────────────────────────────────────────── */
+function toggleCheck(li) {
+  li.classList.toggle('checked');
+  const icon  = li.querySelector('.check-icon');
+  icon.textContent = li.classList.contains('checked') ? '✓' : '';
+  updateProgress();
+}
+
+function updateProgress() {
+  const total   = document.querySelectorAll('#checklist li').length;
+  const checked = document.querySelectorAll('#checklist li.checked').length;
+  document.getElementById('progress-summary').textContent = `${checked} / ${total} complete`;
+}
+
+/* ── Scroll reveal ────────────────────────────────────────── */
+const revealObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) e.target.classList.add('visible');
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.gloss-card, .resource-card, .step, .question, .alert').forEach(el => {
+  el.classList.add('reveal');
+  revealObserver.observe(el);
+});
+
+/* ── Step animation delay ─────────────────────────────────── */
+document.querySelectorAll('.step').forEach((s, i) => {
+  s.style.animationDelay = (i * 0.08) + 's';
+});
+</script>
+</body>
+</html>
