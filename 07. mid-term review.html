@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Algorithms Mid-Term Review — Interactive Study Module</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2744;--blue:#2d6faa;--sky:#e8f2fa;--mint:#27855a;--mint-bg:#e6f5ec;
+  --amber:#d4850a;--amber-bg:#fff6e6;--plum:#6e2a80;--plum-bg:#f5eaf8;
+  --rose:#b83040;--rose-bg:#fdedf0;--ink:#2a2d35;--sub:#5a5e6a;--mute:#8a8e98;
+  --bg:#fafbfd;--card:#ffffff;--border:#e0e3ea;--radius:10px;--shadow:0 2px 12px rgba(26,39,68,.06);
+  --font-display:'Playfair Display',Georgia,serif;
+  --font-body:'Source Sans 3','Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:var(--font-body);color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
+::selection{background:var(--sky);color:var(--navy)}
+a{color:var(--blue);text-decoration:none;border-bottom:1px solid transparent;transition:.2s}
+a:hover{border-bottom-color:var(--blue)}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--navy) 0%,#2a4a7a 60%,#3768a8 100%);color:#fff;padding:4rem 2rem 3rem;text-align:center;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z' fill='none' stroke='rgba(255,255,255,.04)' stroke-width='1'/%3E%3C/svg%3E")}
+.hero h1{font-family:var(--font-display);font-size:clamp(2rem,5vw,3.2rem);font-weight:800;letter-spacing:-.02em;margin-bottom:.5rem;position:relative;z-index:1}
+.hero p{font-size:1.15rem;opacity:.85;max-width:640px;margin:0 auto;position:relative;z-index:1}
+.hero .badge{display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:.3rem 1rem;font-size:.82rem;margin-top:1.2rem;letter-spacing:.04em;position:relative;z-index:1}
+
+/* NAV */
+.nav-strip{position:sticky;top:0;z-index:100;background:var(--card);border-bottom:1px solid var(--border);box-shadow:0 1px 8px rgba(0,0,0,.04)}
+.nav-inner{max-width:1120px;margin:0 auto;display:flex;gap:.25rem;padding:.5rem 1rem;overflow-x:auto;scrollbar-width:none}
+.nav-inner::-webkit-scrollbar{display:none}
+.nav-btn{white-space:nowrap;padding:.45rem .9rem;border-radius:6px;font-size:.82rem;font-weight:600;border:none;cursor:pointer;background:transparent;color:var(--sub);transition:.2s}
+.nav-btn:hover,.nav-btn.active{background:var(--sky);color:var(--navy)}
+
+/* LAYOUT */
+.container{max-width:1120px;margin:0 auto;padding:2rem 1.5rem}
+section{margin-bottom:3rem;animation:fadeUp .5s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+/* HEADINGS */
+h2{font-family:var(--font-display);font-size:1.8rem;color:var(--navy);margin-bottom:1rem;border-bottom:3px solid var(--blue);padding-bottom:.5rem;letter-spacing:-.01em}
+h3{font-size:1.25rem;color:var(--blue);margin:1.5rem 0 .75rem;font-weight:700}
+h4{font-size:1.05rem;color:var(--mint);margin:1.2rem 0 .5rem;font-weight:700}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.25rem;box-shadow:var(--shadow);transition:box-shadow .2s}
+.card:hover{box-shadow:0 4px 20px rgba(26,39,68,.1)}
+.card-header{display:flex;align-items:center;gap:.6rem;margin-bottom:.75rem}
+.card-header .tag{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:.2rem .6rem;border-radius:4px}
+.tag-ch1{background:var(--sky);color:var(--blue)}
+.tag-ch2{background:var(--mint-bg);color:var(--mint)}
+.tag-ch3{background:var(--plum-bg);color:var(--plum)}
+.tag-ch4{background:var(--amber-bg);color:var(--amber)}
+.tag-ch5{background:var(--rose-bg);color:var(--rose)}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto;margin:1rem 0}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th{background:var(--navy);color:#fff;font-weight:600;padding:.6rem .8rem;text-align:left}
+td{padding:.55rem .8rem;border-bottom:1px solid var(--border)}
+tr:nth-child(even) td{background:#f7f8fb}
+
+/* ACCORDION / TOGGLE */
+.toggle-group{margin:1rem 0}
+.toggle-item{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:.6rem;overflow:hidden;background:var(--card)}
+.toggle-q{padding:1rem 1.2rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:.95rem;user-select:none;transition:background .15s}
+.toggle-q:hover{background:var(--sky)}
+.toggle-q::after{content:'＋';font-size:1.1rem;color:var(--mute);transition:transform .2s}
+.toggle-item.open .toggle-q::after{content:'－'}
+.toggle-a{max-height:0;overflow:hidden;transition:max-height .35s ease;padding:0 1.2rem}
+.toggle-item.open .toggle-a{max-height:3000px;padding:0 1.2rem 1rem}
+.toggle-meta{font-size:.78rem;margin-bottom:.4rem;color:var(--blue);font-weight:600}
+.toggle-answer{background:var(--mint-bg);border-left:3px solid var(--mint);padding:.6rem .8rem;border-radius:0 6px 6px 0;margin-top:.5rem;font-size:.9rem;color:#1a5e3a}
+.toggle-explain{background:var(--plum-bg);border-left:3px solid var(--plum);padding:.5rem .8rem;border-radius:0 6px 6px 0;margin-top:.4rem;font-size:.85rem;color:#4a1a5a;font-style:italic}
+.opts{margin:.5rem 0;padding-left:1rem}
+.opts li{list-style:none;padding:.15rem 0;font-size:.9rem}
+
+/* QUIZ MODE */
+.quiz-controls{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem}
+.quiz-btn{padding:.5rem 1.2rem;border-radius:6px;border:2px solid var(--blue);background:transparent;color:var(--blue);font-weight:600;font-size:.85rem;cursor:pointer;transition:.2s}
+.quiz-btn:hover,.quiz-btn.active{background:var(--blue);color:#fff}
+.score-bar{background:var(--sky);border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;font-weight:600;font-size:.9rem;display:flex;justify-content:space-between;align-items:center}
+.score-fill{height:6px;border-radius:3px;background:var(--mint);transition:width .4s ease}
+
+/* PROGRESS */
+.progress-ring{display:flex;align-items:center;gap:.5rem}
+.ring-svg{width:36px;height:36px;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--border);stroke-width:3}
+.ring-fg{fill:none;stroke:var(--mint);stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .6s ease}
+
+/* CASE STUDY */
+.case-card{border-left:4px solid var(--amber)}
+.case-card .scenario{background:var(--amber-bg);padding:.8rem;border-radius:6px;margin:.5rem 0;font-size:.9rem}
+.case-card .question-line{font-weight:600;color:var(--amber);margin:.5rem 0}
+
+/* LINKS */
+.ext-link{display:inline-flex;align-items:center;gap:.3rem;padding:.15rem .5rem;background:var(--sky);border-radius:4px;font-size:.84rem;font-weight:600;border-bottom:none!important}
+.ext-link:hover{background:#d0e6f5}
+.ext-link::after{content:'↗';font-size:.75rem}
+
+/* SEARCH */
+.search-box{position:relative;margin-bottom:1.5rem}
+.search-box input{width:100%;padding:.7rem 1rem .7rem 2.5rem;border:2px solid var(--border);border-radius:8px;font-size:.95rem;font-family:var(--font-body);transition:border .2s}
+.search-box input:focus{outline:none;border-color:var(--blue)}
+.search-box svg{position:absolute;left:.8rem;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--mute)}
+
+/* REVEAL BUTTON */
+.reveal-btn{display:inline-block;margin-top:.6rem;padding:.5rem 1.1rem;border:2px solid var(--mint);border-radius:6px;background:transparent;color:var(--mint);font-weight:700;font-size:.85rem;cursor:pointer;transition:.2s;font-family:var(--font-body)}
+.reveal-btn:hover{background:var(--mint);color:#fff}
+.hidden-answer{margin-top:.5rem}
+
+/* TEST MODE OPTION BUTTONS */
+.opt-group{display:flex;flex-direction:column;gap:.4rem;margin:.6rem 0}
+.opt-btn{text-align:left;padding:.55rem .9rem;border:2px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:.9rem;font-family:var(--font-body);cursor:pointer;transition:.15s;line-height:1.4}
+.opt-btn:hover:not(:disabled){border-color:var(--blue);background:var(--sky)}
+.opt-btn:disabled{cursor:default;opacity:.85}
+.opt-btn.opt-selected{border-color:var(--blue);background:var(--sky);font-weight:600}
+.opt-btn.opt-correct{border-color:var(--mint)!important;background:var(--mint-bg)!important;color:#1a5e3a!important;font-weight:600}
+.opt-btn.opt-correct::before{content:'✅ '}
+.opt-btn.opt-wrong{border-color:var(--rose)!important;background:var(--rose-bg)!important;color:var(--rose)!important}
+.opt-btn.opt-wrong::before{content:'❌ '}
+.submit-msq-btn{margin-top:.5rem;padding:.45rem 1.2rem;border:2px solid var(--blue);border-radius:6px;background:var(--blue);color:#fff;font-weight:700;font-size:.85rem;cursor:pointer;transition:.2s;font-family:var(--font-body)}
+.submit-msq-btn:hover{background:#1f5a8e}
+
+/* TEST RESULT */
+.test-result{padding:.5rem .8rem;border-radius:6px;margin-top:.6rem;font-weight:700;font-size:.92rem}
+.result-correct{background:var(--mint-bg);color:#1a5e3a;border-left:4px solid var(--mint)}
+.result-wrong{background:var(--rose-bg);color:var(--rose);border-left:4px solid var(--rose)}
+
+/* FOOTER */
+footer{text-align:center;padding:2rem;color:var(--mute);font-size:.82rem;border-top:1px solid var(--border);margin-top:2rem}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .hero{padding:2.5rem 1rem 2rem}
+  .container{padding:1.5rem 1rem}
+  h2{font-size:1.4rem}
+  .nav-inner{gap:.1rem}
+  .nav-btn{font-size:.75rem;padding:.35rem .6rem}
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Algorithms — Mid-Term Review</h1>
+  <p>A comprehensive, interactive 3-hour study module covering Modules 01–05 for undergraduate CS students.</p>
+  <div class="badge">45 MCQs · 35 MSQs · 20 Essays · 10 Case Studies</div>
+</div>
+
+<div class="nav-strip">
+  <div class="nav-inner">
+    <button class="nav-btn active" onclick="showSection('all')">All</button>
+    <button class="nav-btn" onclick="showSection('review')">Content Review</button>
+    <button class="nav-btn" onclick="showSection('cases')">Case Studies</button>
+    <button class="nav-btn" onclick="showSection('mcq')">MCQs (45)</button>
+    <button class="nav-btn" onclick="showSection('msq')">MSQs (35)</button>
+    <button class="nav-btn" onclick="showSection('essay')">Essays (20)</button>
+    <button class="nav-btn" onclick="toggleQuizMode()">🎯 Quiz Mode</button>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="search-box">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+  <input type="text" id="searchInput" placeholder="Search topics, questions, terms..." oninput="filterContent(this.value)">
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PART I: CONTENT REVIEW                                 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="sec-review" data-section="review">
+<h2>Part I — Comprehensive Content Review</h2>
+
+<!-- CH1 -->
+<div class="card" data-search="big-o omega theta notation asymptotic analysis upper bound lower bound tight bound complexity algorithm performance">
+<h3>Chapter 1: Introduction to Algorithm Analysis <span class="tag tag-ch1">Module 01</span></h3>
+<p>This foundational chapter introduces the language every software professional uses to discuss and compare algorithm performance. Rather than measuring raw execution time, we study how resource usage <em>grows</em> as input size increases.</p>
+
+<h4>1.1 Asymptotic Notation</h4>
+<div class="tbl-wrap"><table>
+<tr><th>Notation</th><th>Name</th><th>Describes</th><th>Everyday Analogy</th></tr>
+<tr><td>Big-O (Upper Bound)</td><td>"Oh no, how bad?"</td><td>Worst-case ceiling on growth</td><td>Longest commute: accident + construction + parade</td></tr>
+<tr><td>Big-Ω (Lower Bound)</td><td>"Oh nice, the minimum"</td><td>Best-case floor on growth</td><td>Fastest commute: every light is green</td></tr>
+<tr><td>Big-Θ (Tight Bound)</td><td>"The realistic picture"</td><td>Growth when best and worst match</td><td>Your typical daily commute</td></tr>
+</table></div>
+
+<h4>Common Growth Rates (fastest → slowest)</h4>
+<div class="tbl-wrap"><table>
+<tr><th>Notation</th><th>Name</th><th>Example</th><th>n = 1,000,000</th></tr>
+<tr><td>O(1)</td><td>Constant</td><td>Array index lookup</td><td>1 step</td></tr>
+<tr><td>O(log n)</td><td>Logarithmic</td><td>Binary search</td><td>~20 steps</td></tr>
+<tr><td>O(n)</td><td>Linear</td><td>Reading every item once</td><td>1,000,000 steps</td></tr>
+<tr><td>O(n log n)</td><td>Linearithmic</td><td>MergeSort</td><td>~20,000,000 steps</td></tr>
+<tr><td>O(n²)</td><td>Quadratic</td><td>Nested loops (compare pairs)</td><td>1,000,000,000,000 steps</td></tr>
+<tr><td>O(2ⁿ)</td><td>Exponential</td><td>Trying every subset</td><td>Astronomical</td></tr>
+</table></div>
+
+<h4>1.2 Best, Expected, and Worst-Case Analysis</h4>
+<p>Every algorithm has three behavioral profiles. <strong>Best case (Ω)</strong>: the minimum possible work. <strong>Worst case (O)</strong>: the maximum possible work. <strong>Expected case (Θ)</strong>: typical performance across all inputs. Capacity planning demands attention to worst-case behavior so servers don't fail under peak load.</p>
+<p><a href="https://sre.google/sre-book/table-of-contents/" class="ext-link" target="_blank">Google SRE Book</a> — engineering resource for reliability.</p>
+
+<h4>1.3 Complexity for System Administrators</h4>
+<div class="tbl-wrap"><table>
+<tr><th>Task</th><th>Naive Approach</th><th>Smart Approach</th></tr>
+<tr><td>Find error in log</td><td>Read entire file — O(n)</td><td>Indexed search — O(log n)</td></tr>
+<tr><td>Count occurrences</td><td>Nested loop — O(n²)</td><td>Hash table — O(n)</td></tr>
+<tr><td>Sort by timestamp</td><td>Bubble Sort — O(n²)</td><td>MergeSort — O(n log n)</td></tr>
+<tr><td>Detect duplicates</td><td>Compare pairs — O(n²)</td><td>Hash set — O(n)</td></tr>
+</table></div>
+<p><a href="https://www.nist.gov/" class="ext-link" target="_blank">NIST (National Institute of Standards and Technology)</a></p>
+</div>
+
+<!-- CH2 -->
+<div class="card" data-search="quicksort mergesort heapsort sorting priority queue QoS network traffic scheduling heap binary">
+<h3>Chapter 2: Basic Sorting &amp; Data Organization <span class="tag tag-ch2">Module 02</span></h3>
+
+<h4>2.1 The Three Sorting Champions</h4>
+<div class="tbl-wrap"><table>
+<tr><th>Property</th><th>QuickSort</th><th>MergeSort</th><th>HeapSort</th></tr>
+<tr><td>Strategy</td><td>Divide around pivot</td><td>Divide, sort halves, merge</td><td>Build heap, extract max</td></tr>
+<tr><td>Best/Avg Case</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n log n)</td></tr>
+<tr><td>Worst Case</td><td>O(n²) — poor pivot</td><td>O(n log n)</td><td>O(n log n)</td></tr>
+<tr><td>Space</td><td>O(log n) in-place</td><td>O(n) extra array</td><td>O(1) in-place</td></tr>
+<tr><td>Stable?</td><td>No (basic)</td><td>Yes</td><td>No</td></tr>
+</table></div>
+<p><strong>QuickSort</strong> selects a pivot, partitions into smaller/larger groups, and recurses. Worst-case O(n²) when pivot is always min/max. <strong>MergeSort</strong> always splits in half, merges in order — guaranteed O(n log n). <strong>HeapSort</strong> builds a max-heap, extracts the root repeatedly — O(1) space.</p>
+
+<h4>2.2 Sorting Network Traffic</h4>
+<p>Routers sort millions of packets per second for QoS (Quality of Service). Latency-sensitive traffic (video calls) gets priority over delay-tolerant data (downloads).</p>
+<p><a href="https://www.cisco.com/" class="ext-link" target="_blank">Cisco Systems</a> · <a href="https://www.cloudflare.com/" class="ext-link" target="_blank">Cloudflare</a></p>
+
+<h4>2.3 Priority Queues</h4>
+<p>A priority queue serves elements by urgency, not arrival order. A binary heap gives O(log n) insert and O(log n) extract-max. Used in ER triage, OS scheduling, and cloud resource management.</p>
+<p><a href="https://aws.amazon.com/" class="ext-link" target="_blank">AWS (Amazon Web Services)</a></p>
+</div>
+
+<!-- CH3 -->
+<div class="card" data-search="BST binary search tree AVL rotation balance degenerate linked list DNS IP lookup in-order successor">
+<h3>Chapter 3: Binary Search Trees <span class="tag tag-ch3">Module 03</span></h3>
+
+<h4>3.1 BST (Binary Search Tree) Core Operations</h4>
+<p>The golden rule: for any node, all left-subtree values are smaller and all right-subtree values are larger.</p>
+<div class="tbl-wrap"><table>
+<tr><th>Operation</th><th>Balanced</th><th>Degenerate</th><th>Process</th></tr>
+<tr><td>Search</td><td>O(log n)</td><td>O(n)</td><td>Compare, go left or right</td></tr>
+<tr><td>Insertion</td><td>O(log n)</td><td>O(n)</td><td>Walk to empty spot</td></tr>
+<tr><td>Deletion (two children)</td><td>O(log n)</td><td>O(n)</td><td>Replace with in-order successor</td></tr>
+</table></div>
+
+<h4>3.2 Why Balance Matters</h4>
+<p>Sorted insertions (1, 2, 3, 4, 5) create a linked-list-shaped tree with O(n) operations. Balance keeps height at O(log n).</p>
+
+<h4>3.3 AVL (Adelson-Velsky and Landis) Trees</h4>
+<p>Self-balancing BST: subtree heights differ by at most 1. Rotations restore balance after insert/delete.</p>
+<div class="tbl-wrap"><table>
+<tr><th>Rotation</th><th>Triggered When</th><th>Action</th></tr>
+<tr><td>Left</td><td>Right-Right case</td><td>Pivot unbalanced node down-left</td></tr>
+<tr><td>Right</td><td>Left-Left case</td><td>Pivot unbalanced node down-right</td></tr>
+<tr><td>Left-Right</td><td>Left child's right subtree</td><td>Double rotation</td></tr>
+<tr><td>Right-Left</td><td>Right child's left subtree</td><td>Double rotation</td></tr>
+</table></div>
+
+<h4>3.4 IP (Internet Protocol) Address Lookup</h4>
+<p>DNS (Domain Name System) converts domain names to IP addresses using tree-based structures for efficient search among billions of entries.</p>
+<p><a href="https://www.iana.org/" class="ext-link" target="_blank">IANA (Internet Assigned Numbers Authority)</a></p>
+</div>
+
+<!-- CH4 -->
+<div class="card" data-search="recursion iteration stack overflow tail call optimization TCO DFS BFS depth first breadth first backup traversal">
+<h3>Chapter 4: Iterative vs. Recursive Analysis <span class="tag tag-ch4">Module 04</span></h3>
+
+<h4>4.1 Stack Depth and Memory</h4>
+<div class="tbl-wrap"><table>
+<tr><th>Feature</th><th>Recursion</th><th>Iteration</th></tr>
+<tr><td>Stack frames</td><td>One per call — O(n)</td><td>One total — O(1)</td></tr>
+<tr><td>Crash risk</td><td>Stack overflow on deep input</td><td>None from depth</td></tr>
+<tr><td>Best for</td><td>Tree-like problems</td><td>Linear tasks</td></tr>
+</table></div>
+
+<h4>4.2 Tail Call Optimization (TCO)</h4>
+<p>A tail-recursive call is the last operation with no remaining work. Compilers supporting TCO reuse the current frame, achieving O(1) memory.</p>
+<div class="tbl-wrap"><table>
+<tr><th>Language</th><th>TCO?</th><th>Notes</th></tr>
+<tr><td>Scheme</td><td>Mandatory</td><td>Standard requires it</td></tr>
+<tr><td>Haskell</td><td>Effective</td><td>Lazy evaluation</td></tr>
+<tr><td>C (gcc -O2)</td><td>Yes</td><td>Optimization flag needed</td></tr>
+<tr><td>Python</td><td>No</td><td>Omitted for debugging clarity</td></tr>
+<tr><td>Java</td><td>No</td><td>JVM (Java Virtual Machine) doesn't optimize</td></tr>
+</table></div>
+
+<h4>4.3 DFS vs. BFS Traversal</h4>
+<div class="tbl-wrap"><table>
+<tr><th>Property</th><th>DFS (Depth-First)</th><th>BFS (Breadth-First)</th></tr>
+<tr><td>Structure</td><td>Stack (LIFO — Last In, First Out)</td><td>Queue (FIFO — First In, First Out)</td></tr>
+<tr><td>Memory</td><td>O(d) — depth</td><td>O(w) — width</td></tr>
+<tr><td>Crash recovery</td><td>Complete branches done</td><td>Partial all branches</td></tr>
+<tr><td>Tools</td><td>rsync, tar</td><td>robocopy</td></tr>
+</table></div>
+<p><a href="https://rsync.samba.org/" class="ext-link" target="_blank">rsync</a> · <a href="https://www.gnu.org/software/tar/manual/" class="ext-link" target="_blank">GNU tar</a></p>
+</div>
+
+<!-- CH5 -->
+<div class="card" data-search="brute force exhaustive search password cracking port scanning CAPTCHA salted hashing MFA NIST cybersecurity">
+<h3>Chapter 5: Brute-Force Algorithm Strategies <span class="tag tag-ch5">Module 05</span></h3>
+
+<h4>5.1 Exhaustive Search</h4>
+<p>Try every candidate, test each one. Guaranteed correct but trades efficiency for simplicity. Appropriate when the search space is small, correctness is critical, or as a baseline for verifying optimized solutions.</p>
+
+<h4>5.2 Password Cracking</h4>
+<div class="tbl-wrap"><table>
+<tr><th>Length</th><th>Digits (10)</th><th>Lowercase (26)</th><th>Full ASCII (95)</th></tr>
+<tr><td>4 chars</td><td>10,000</td><td>456,976</td><td>81,450,625</td></tr>
+<tr><td>6 chars</td><td>1,000,000</td><td>308,915,776</td><td>735 billion</td></tr>
+<tr><td>8 chars</td><td>100,000,000</td><td>208.8 billion</td><td>6.6 quadrillion</td></tr>
+<tr><td>10 chars</td><td>10 billion</td><td>141.1 trillion</td><td>59.8 quintillion</td></tr>
+</table></div>
+<p><strong>Defenses:</strong> Account lockout, rate limiting, CAPTCHA (Completely Automated Public Turing test to tell Computers and Humans Apart), salted hashing, MFA (Multi-Factor Authentication).</p>
+<p><a href="https://pages.nist.gov/800-63-3/sp800-63b.html" class="ext-link" target="_blank">NIST SP 800-63B</a> · <a href="https://haveibeenpwned.com/" class="ext-link" target="_blank">Have I Been Pwned</a> · <a href="https://nmap.org/" class="ext-link" target="_blank">Nmap</a></p>
+
+<h4>5.3 Port Scanning</h4>
+<p>Tests all 65,536 TCP (Transmission Control Protocol) ports on a host — exhaustive search applied to network reconnaissance.</p>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PART II: CASE STUDIES                                  -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="sec-cases" data-section="cases">
+<h2>Part II — Case Studies (10 Scenarios)</h2>
+<p style="color:var(--sub);margin-bottom:1rem">Click each case study to reveal the model answer.</p>
+<div class="toggle-group" id="caseStudyGroup"></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PART III: MCQs                                         -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="sec-mcq" data-section="mcq">
+<h2>Part III — Multiple-Choice Questions (45 MCQs)</h2>
+<div class="quiz-controls">
+  <button class="quiz-btn active" onclick="setMode('mcq','study')">📖 Study Mode</button>
+  <button class="quiz-btn" onclick="setMode('mcq','test')">🎯 Test Mode</button>
+  <button class="quiz-btn" onclick="resetQuiz('mcq')">🔄 Reset</button>
+</div>
+<div class="score-bar" id="mcqScore" style="display:none"><span id="mcqScoreText">Score: 0 / 0</span><div style="flex:1;margin-left:1rem;background:var(--border);border-radius:3px;height:6px"><div class="score-fill" id="mcqFill" style="width:0%"></div></div></div>
+<div class="toggle-group" id="mcqGroup"></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PART IV: MSQs                                          -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="sec-msq" data-section="msq">
+<h2>Part IV — Multiple-Select Questions (35 MSQs)</h2>
+<div class="quiz-controls">
+  <button class="quiz-btn active" onclick="setMode('msq','study')">📖 Study Mode</button>
+  <button class="quiz-btn" onclick="setMode('msq','test')">🎯 Test Mode</button>
+  <button class="quiz-btn" onclick="resetQuiz('msq')">🔄 Reset</button>
+</div>
+<div class="score-bar" id="msqScore" style="display:none"><span id="msqScoreText">Score: 0 / 0</span><div style="flex:1;margin-left:1rem;background:var(--border);border-radius:3px;height:6px"><div class="score-fill" id="msqFill" style="width:0%"></div></div></div>
+<div class="toggle-group" id="msqGroup"></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PART V: ESSAYS                                         -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="sec-essay" data-section="essay">
+<h2>Part V — Short Essay Questions (20)</h2>
+<p style="color:var(--sub);margin-bottom:1rem">Write 4–8 sentences per question, then reveal the model answer to compare.</p>
+<div class="toggle-group" id="essayGroup"></div>
+</section>
+
+</div>
+
+<footer>
+  Algorithms Mid-Term Review — Undergraduate CS Program — Spring 2026<br>
+  Prepared for academic use only. Content synthesized from course Modules 01–05.
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════
+const caseStudies=[
+{t:"The Overloaded E-Commerce Server",ch:"Chapter 1 (Module 01)",s:"An online retailer's search function uses a linear scan through its product database of 5 million items. During a flash sale, response times spike to 12 seconds per query. The engineering team proposes switching to binary search after pre-sorting the catalog.",q:"Using Big-O analysis, explain why the linear scan is slow and estimate the improvement from binary search.",a:"Linear search is O(n), meaning the worst case checks all 5,000,000 records. Binary search on sorted data is O(log n), requiring roughly log₂(5,000,000) ≈ 23 comparisons — a reduction from millions of operations to approximately two dozen. The flash-sale scenario represents the worst case because many queries hit items deep in the unsorted list. Switching to binary search (after a one-time O(n log n) sort) would bring query times from seconds to microseconds."},
+{t:"University Registration Meltdown",ch:"Chapter 2 (Module 02)",s:"A university registration system uses Bubble Sort (O(n²)) to order 45,000 student records by priority. The system freezes for 40 minutes before producing results.",q:"Compare QuickSort, MergeSort, and HeapSort as replacements. Which would you recommend and why?",a:"Bubble Sort at O(n²) requires ~2 billion comparisons on 45,000 records. All three candidates run in O(n log n) ≈ 720,000 operations. MergeSort is the strongest recommendation: guaranteed O(n log n) in all cases (unlike QuickSort which can degrade), and it is a stable sort preserving timestamp order among equal-priority students. HeapSort uses less memory (O(1)) but is not stable. QuickSort is fast in practice but carries worst-case risk on partially sorted data."},
+{t:"The Collapsing DNS Cache",ch:"Chapter 3 (Module 03)",s:"A campus DNS (Domain Name System) resolver stores addresses in a BST. After restart, addresses are loaded alphabetically. Users report slow lookups.",q:"Explain why sorted insertion degrades BST performance and propose an AVL solution.",a:"Alphabetically sorted insertions create a degenerate right-leaning chain (linked list). Each lookup is O(n) instead of O(log n). An AVL tree detects Right-Right imbalance and performs left rotations after each insertion, keeping the tree balanced at O(log n) height. For example, inserting amazon→facebook→google triggers a rotation making 'facebook' the root with balanced subtrees."},
+{t:"The Recursive Backup Disaster",ch:"Chapter 4 (Module 04)",s:"A junior sysadmin writes a recursive Python script to back up 50,000 nested directories. It crashes with 'RecursionError: maximum recursion depth exceeded' after ~1,000 folders.",q:"Explain the crash and describe how to fix the script.",a:"Python's default recursion limit is ~1,000 calls. Each recursive call adds a stack frame (O(n) total). With 50,000 directories, the script far exceeds this. Fix: convert to iterative DFS using an explicit stack (Python list with append/pop), which uses O(1) stack memory. Alternatively, use BFS with a queue. Raising sys.setrecursionlimit() is a stopgap — the OS stack has a hard physical limit too."},
+{t:"The Weak Password Breach",ch:"Chapter 5 (Module 05)",s:"A company breach reveals 78% of employee passwords were 6-character lowercase strings. The attacker's brute-force script ran at 10 million guesses/second.",q:"Calculate how long the attack took and recommend defenses.",a:"26⁶ = 308,915,776 combinations. At 10M guesses/sec, full exhaustion takes ~31 seconds; average cracking time ~15 seconds. Defenses: (1) enforce 12+ char mixed passwords (95¹² ≈ 5.4×10²³ — billions of years), (2) account lockout after 5 failures, (3) rate limiting, (4) MFA (Multi-Factor Authentication), (5) salted hashing to defeat rainbow tables."},
+{t:"The ER Queue Crisis",ch:"Chapter 2 (Module 02)",s:"A hospital ER uses FIFO (First In, First Out) queuing. A sprained ankle (2:00 PM) is treated before a heart attack (2:05 PM).",q:"Explain how a priority queue solves this and describe its implementation.",a:"A priority queue assigns triage levels (1=critical to 5=minor) and always serves the highest priority next. Binary heap implementation offers O(log n) insert (bubble-up) and O(log n) extract (bubble-down). The heart attack (Priority 1) immediately moves to front. Same-priority ties are broken by arrival time for fairness."},
+{t:"The Smart Library Catalog",ch:"Chapter 3 (Module 03)",s:"A library migrates from a flat spreadsheet to a BST indexed by Dewey Decimal numbers. Sequential textbook numbers cause slow searches.",q:"Diagnose the problem and explain how AVL rotations resolve it.",a:"Sequential Dewey numbers (510.01, 510.02, 510.03) create a right-leaning degenerate chain for that segment. AVL rotations detect balance factor exceeding ±1 and restructure: LL→right rotation, RR→left rotation, zigzag→double rotation. After rebalancing, even sequential insertions yield O(log n) height."},
+{t:"Recursion vs. Iteration for Log Parsing",ch:"Chapter 4 (Module 04)",s:"A security analyst must parse 2 million auth log lines to count failed logins per IP. A colleague suggests recursive processing.",q:"Analyze whether recursion or iteration is more appropriate.",a:"Iteration is overwhelmingly better. Recursive approach would need 2M stack frames (far exceeding Python's ~1K limit). Iterative for-loop with hash table uses O(1) stack + O(k) memory for k unique IPs. This task is linear — no tree structure benefits from recursion. Iteration is also faster, avoiding millions of function call overheads."},
+{t:"Campus Network Security Audit",ch:"Chapter 5 (Module 05)",s:"The IT security team must audit all 65,536 TCP ports on 200 campus servers.",q:"Calculate total checks for a full brute-force scan and discuss when exhaustive scanning is justified.",a:"65,536 × 200 = 13,107,200 port checks. Time complexity: O(p × s), linear in total work. Modern tools like Nmap can handle this in minutes. The exhaustive approach is justified because a targeted scan of 'common' ports would miss services on unusual ports — exactly where attackers hide malicious software. Incomplete scans create a false sense of safety."},
+{t:"Real-Time Gaming Leaderboard",ch:"Chapters 1 & 3 (Modules 01 & 03)",s:"An online game maintains a leaderboard for 500,000 players using an unsorted array re-sorted with Bubble Sort for every score change (~1,000/sec).",q:"Propose an efficient data structure and explain the Big-O improvement.",a:"Current: Bubble Sort O(n²) on 500K elements 1K times/sec = ~250 billion ops/sec — impossible. Solution: AVL tree indexed by score. Each update = delete old + insert new = 2×O(log n) ≈ 2×19 = 38 steps. At 1K updates/sec = 38,000 ops/sec — trivial for modern hardware. Augment nodes with subtree size for O(log n) rank lookups."},
+];
+
+const mcqs=[
+{q:"What does Big-O notation describe?",ch:"Ch.1 (Mod 01)",o:["A) Best-case performance","B) Upper bound (worst-case ceiling) of growth","C) Exact running time in seconds","D) Average memory allocations"],a:"B",x:"Big-O represents the upper bound on growth, capturing worst-case scaling."},
+{q:"Binary search on 1,000,000 sorted elements needs approximately how many worst-case comparisons?",ch:"Ch.1 (Mod 01)",o:["A) 1,000,000","B) 500,000","C) 20","D) 100"],a:"C",x:"log₂(1,000,000) ≈ 20. Each step halves the remaining search space."},
+{q:"Which notation represents the best-case (lower bound)?",ch:"Ch.1 (Mod 01)",o:["A) Big-O","B) Big-Θ","C) Big-Ω","D) Little-o"],a:"C",x:"Big-Ω (Omega) describes the minimum work regardless of how favorable the input."},
+{q:"O(n²) processes 100 items in 1s. Time for 1,000 items?",ch:"Ch.1 (Mod 01)",o:["A) 10s","B) 100s","C) 1,000s","D) 2s"],a:"B",x:"Quadratic: 10× input → 100× time."},
+{q:"Hash table lookup complexity?",ch:"Ch.1 (Mod 01)",o:["A) O(n)","B) O(log n)","C) O(1)","D) O(n log n)"],a:"C",x:"Position computed directly from the key — no scanning needed."},
+{q:"Which sorting algorithm guarantees O(n log n) in ALL cases?",ch:"Ch.2 (Mod 02)",o:["A) QuickSort","B) Bubble Sort","C) MergeSort","D) Insertion Sort"],a:"C",x:"MergeSort always halves and merges linearly. QuickSort can degrade to O(n²)."},
+{q:"QuickSort's worst-case time complexity?",ch:"Ch.2 (Mod 02)",o:["A) O(n log n)","B) O(n²)","C) O(n)","D) O(log n)"],a:"B",x:"Poor pivot creates maximally unbalanced partitions."},
+{q:"Which sorting algorithm uses the LEAST extra memory?",ch:"Ch.2 (Mod 02)",o:["A) MergeSort — O(n)","B) HeapSort — O(1)","C) QuickSort — O(log n)","D) Counting Sort — O(k)"],a:"B",x:"HeapSort sorts in-place with constant extra space."},
+{q:"Binary heap insertion time complexity?",ch:"Ch.2 (Mod 02)",o:["A) O(1)","B) O(n)","C) O(log n)","D) O(n log n)"],a:"C",x:"New element bubbles up through at most log n levels."},
+{q:"QoS (Quality of Service) in networking relies on:",ch:"Ch.2 (Mod 02)",o:["A) FIFO queuing","B) Priority-based packet sorting","C) Random selection","D) Alphabetical ordering"],a:"B",x:"QoS sorts packets by priority so latency-sensitive traffic goes first."},
+{q:"The golden rule of a BST is:",ch:"Ch.3 (Mod 03)",o:["A) Left > parent > right","B) Left < parent < right","C) All children equal parent","D) Tree must be complete"],a:"B",x:"Left-subtree values smaller, right-subtree values larger."},
+{q:"Inserting sorted data (1,2,3,4,5) into a plain BST creates:",ch:"Ch.3 (Mod 03)",o:["A) Perfectly balanced tree","B) Degenerate linked list","C) Auto-balanced tree","D) Insertion failure"],a:"B",x:"Each value always goes right, forming a chain."},
+{q:"BST deletion with two children uses:",ch:"Ch.3 (Mod 03)",o:["A) Left child","B) Right child","C) In-order successor","D) Root node"],a:"C",x:"Smallest value in right subtree maintains BST property."},
+{q:"Maximum subtree height difference in an AVL tree?",ch:"Ch.3 (Mod 03)",o:["A) 0","B) 1","C) 2","D) No limit"],a:"B",x:"Balance factor must be -1, 0, or +1; ≥2 triggers rotation."},
+{q:"Right-Right imbalance in AVL is fixed by:",ch:"Ch.3 (Mod 03)",o:["A) Right rotation","B) Left rotation","C) Left-Right double","D) Right-Left double"],a:"B",x:"Left rotation pivots the unbalanced node down and left."},
+{q:"Primary risk of deep recursion?",ch:"Ch.4 (Mod 04)",o:["A) Slower network","B) Stack overflow","C) Data corruption","D) Increased disk usage"],a:"B",x:"Exceeding the stack frame limit crashes the program."},
+{q:"Iterative loop memory usage?",ch:"Ch.4 (Mod 04)",o:["A) O(n)","B) O(log n)","C) O(n²)","D) O(1)"],a:"D",x:"One frame reused — constant regardless of iterations."},
+{q:"TCO (Tail Call Optimization) is:",ch:"Ch.4 (Mod 04)",o:["A) Network speed technique","B) Compiler reuses stack frame for tail call","C) Data compression","D) Encryption algorithm"],a:"B",x:"Converts tail recursion into iteration at machine level."},
+{q:"Which language does NOT support TCO?",ch:"Ch.4 (Mod 04)",o:["A) Scheme","B) Haskell","C) Python","D) C (gcc -O2)"],a:"C",x:"Python omits TCO for debugging clarity."},
+{q:"BFS uses which data structure?",ch:"Ch.4 (Mod 04)",o:["A) Stack","B) Queue (FIFO)","C) Binary heap","D) Hash table"],a:"B",x:"Queue ensures earliest-discovered nodes processed first."},
+{q:"Core idea of brute-force algorithms?",ch:"Ch.5 (Mod 05)",o:["A) Heuristic shortcuts","B) Divide into subproblems","C) Try every candidate systematically","D) Randomized search"],a:"C",x:"Examine all candidates without shortcuts — guaranteed completeness."},
+{q:"4-digit numeric PIN has how many combinations?",ch:"Ch.5 (Mod 05)",o:["A) 1,000","B) 10,000","C) 40,000","D) 100,000"],a:"B",x:"10⁴ = 10,000 possible PINs."},
+{q:"Brute-force search on unsorted array of n elements?",ch:"Ch.5 (Mod 05)",o:["A) O(log n)","B) O(1)","C) O(n)","D) O(n²)"],a:"C",x:"Must check every element once in worst case."},
+{q:"Salted hashing defends against:",ch:"Ch.5 (Mod 05)",o:["A) Brute-force speed","B) Rainbow table attacks","C) Packet sniffing","D) SQL injection"],a:"B",x:"Unique salt per password makes precomputed tables useless."},
+{q:"CAPTCHA stands for:",ch:"Ch.5 (Mod 05)",o:["A) Computer Algorithm for Password Testing...","B) Completely Automated Public Turing test to tell Computers and Humans Apart","C) Centralized Authentication Protocol...","D) Cryptographic Authentication Process..."],a:"B",x:"Verifies user is human, blocking automated brute-force tools."},
+{q:"Brute-force is most appropriate when:",ch:"Ch.5 (Mod 05)",o:["A) n > 1,000,000","B) Search space is small or correctness critical","C) Memory is limited","D) Data is pre-sorted"],a:"B",x:"Small spaces are fast; guaranteed completeness is essential for safety-critical systems."},
+{q:"MergeSort's Big-O class?",ch:"Ch.1&2 (Mod 01-02)",o:["A) O(n)","B) O(n²)","C) O(n log n)","D) O(2ⁿ)"],a:"C",x:"Halves array (log n levels) with linear work each level."},
+{q:"Search time for balanced BST with 1M nodes?",ch:"Ch.3 (Mod 03)",o:["A) O(1,000,000)","B) O(500,000)","C) O(20)","D) O(1)"],a:"C",x:"log₂(1,000,000) ≈ 20 comparisons."},
+{q:"rsync is most associated with:",ch:"Ch.4 (Mod 04)",o:["A) BFS","B) DFS","C) Binary Search","D) Random Search"],a:"B",x:"rsync traverses directories depth-first."},
+{q:"Brute-force on all subsets of n elements?",ch:"Ch.5 (Mod 05)",o:["A) O(n)","B) O(n²)","C) O(n!)","D) O(2ⁿ)"],a:"D",x:"Each element in/out = 2 choices per element = 2ⁿ subsets."},
+{q:"BST deletion using in-order successor:",ch:"Ch.3 (Mod 03)",o:["A) Violates BST rule","B) Preserves BST rule","C) Empties tree","D) Requires rotation"],a:"B",x:"Smallest right-subtree value maintains ordering property."},
+{q:"Which has O(1) time?",ch:"Ch.1 (Mod 01)",o:["A) Binary search","B) Array index access","C) MergeSort","D) Linear search"],a:"B",x:"arr[i] computes address directly — no scanning."},
+{q:"Big-Θ differs from Big-O because:",ch:"Ch.1 (Mod 01)",o:["A) Only applies to sorting","B) Means exact growth rate (upper and lower match)","C) Always faster","D) Identical to Big-O"],a:"B",x:"Big-Θ applies when best/worst share same growth rate."},
+{q:"A heap in HeapSort context is:",ch:"Ch.2 (Mod 02)",o:["A) Dynamic memory region","B) Complete binary tree with heap property","C) Balanced BST","D) Hash table variant"],a:"B",x:"Max-heap: complete binary tree, parent ≥ children."},
+{q:"Full TCP port scan checks how many ports?",ch:"Ch.5 (Mod 05)",o:["A) 1,024","B) 10,000","C) 65,536","D) 1,000,000"],a:"C",x:"TCP ports range 0–65,535 = 65,536 total."},
+{q:"DFS uses which data structure?",ch:"Ch.4 (Mod 04)",o:["A) Queue","B) Stack","C) Priority Queue","D) Linked List"],a:"B",x:"Stack (call stack or explicit) tracks nodes to visit."},
+{q:"Python default recursion limit?",ch:"Ch.4 (Mod 04)",o:["A) 100","B) 1,000","C) 10,000","D) No limit"],a:"B",x:"Default ~1,000; RecursionError raised after that."},
+{q:"MFA defends against brute-force by:",ch:"Ch.5 (Mod 05)",o:["A) Making passwords longer","B) Requiring second verification factor","C) Encrypting database","D) Sorting passwords"],a:"B",x:"Even a cracked password needs the second factor."},
+{q:"Most critical case analysis for server planning?",ch:"Ch.1 (Mod 01)",o:["A) Best","B) Expected","C) Worst","D) None"],a:"C",x:"Servers must handle peak load without crashing."},
+{q:"AVL tree with 7 nodes has max height:",ch:"Ch.3 (Mod 03)",o:["A) 2","B) 3","C) 4","D) 7"],a:"B",x:"Balanced binary tree with 7 nodes ≈ height 3."},
+{q:"MergeSort space complexity?",ch:"Ch.2 (Mod 02)",o:["A) O(1)","B) O(log n)","C) O(n)","D) O(n²)"],a:"C",x:"Temporary array of size n for merging."},
+{q:"Why choose middle pivot in QuickSort?",ch:"Ch.2 (Mod 02)",o:["A) Reduces space","B) Avoids O(n²) on sorted input","C) Makes it stable","D) Eliminates recursion"],a:"B",x:"First-element pivot on sorted data = maximally unbalanced."},
+{q:"Building a max-heap from unordered array?",ch:"Ch.2 (Mod 02)",o:["A) O(n²)","B) O(n log n)","C) O(n)","D) O(log n)"],a:"C",x:"Most nodes near bottom with short heapify paths → O(n) total."},
+{q:"Rate limiting defends by:",ch:"Ch.5 (Mod 05)",o:["A) Blocking all logins","B) Slowing authentication requests","C) Increasing password length","D) Double hashing"],a:"B",x:"Restricts guesses per time unit, making brute-force impractical."},
+{q:"TSP (Travelling Salesman) brute-force complexity?",ch:"Ch.5 (Mod 05)",o:["A) O(n)","B) O(n²)","C) O(n!)","D) O(2ⁿ)"],a:"C",x:"All permutations of n cities = n! routes to check."},
+];
+
+const msqs=[
+{q:"Valid asymptotic notations? (Select all)",ch:"Ch.1 (Mod 01)",o:["A) Big-O","B) Big-Ω","C) Big-Θ","D) Big-α"],a:"A, B, C",x:"The three standard notations. Big-α does not exist."},
+{q:"True about O(n²) algorithms? (Select all)",ch:"Ch.1 (Mod 01)",o:["A) 2× input → 4× time","B) Efficient for large data","C) Nested loops common source","D) Bubble Sort is example"],a:"A, C, D",x:"Quadratic scaling from nested iterations; inefficient at scale."},
+{q:"Which have worst-case O(n log n)? (Select all)",ch:"Ch.2 (Mod 02)",o:["A) QuickSort","B) MergeSort","C) HeapSort","D) Bubble Sort"],a:"B, C",x:"MergeSort & HeapSort guarantee O(n log n). QuickSort can hit O(n²)."},
+{q:"MergeSort advantages over QuickSort? (Select all)",ch:"Ch.2 (Mod 02)",o:["A) Guaranteed O(n log n)","B) Less memory","C) Stable sort","D) Better for linked lists"],a:"A, C, D",x:"MergeSort: guaranteed, stable, good for linked lists. Uses MORE memory."},
+{q:"Balanced BST O(log n) operations? (Select all)",ch:"Ch.3 (Mod 03)",o:["A) Search","B) Insertion","C) Deletion","D) Finding minimum"],a:"A, B, C, D",x:"All four traverse at most the tree height."},
+{q:"BST degenerates to linked list when? (Select all)",ch:"Ch.3 (Mod 03)",o:["A) Ascending sorted input","B) Descending sorted input","C) Random input","D) Alternating high/low"],a:"A, B",x:"Sorted input creates a one-sided chain."},
+{q:"AVL rotation types? (Select all)",ch:"Ch.3 (Mod 03)",o:["A) Left","B) Right","C) Left-Right","D) Right-Left"],a:"A, B, C, D",x:"All four cover the four imbalance patterns."},
+{q:"True about recursive functions? (Select all)",ch:"Ch.4 (Mod 04)",o:["A) Call themselves","B) Need base case","C) Always less memory than iteration","D) Each call = new stack frame"],a:"A, B, D",x:"They call themselves, need termination, create frames. Use MORE memory."},
+{q:"Languages supporting TCO? (Select all)",ch:"Ch.4 (Mod 04)",o:["A) Scheme","B) Python","C) Haskell","D) C (gcc -O2)"],a:"A, C, D",x:"Python deliberately omits TCO."},
+{q:"True about DFS? (Select all)",ch:"Ch.4 (Mod 04)",o:["A) Explores one branch fully first","B) Uses a queue","C) Can be recursive","D) Can be iterative with stack"],a:"A, C, D",x:"DFS uses stack (not queue). Can be recursive or iterative."},
+{q:"Brute-force password defenses? (Select all)",ch:"Ch.5 (Mod 05)",o:["A) Account lockout","B) Rate limiting","C) Short passwords","D) Salted hashing"],a:"A, B, D",x:"Lockout, rate limit, salted hash help. Short passwords HURT security."},
+{q:"Valid brute-force use cases? (Select all)",ch:"Ch.5 (Mod 05)",o:["A) Small search spaces","B) Correctness guarantee needed","C) Baseline verification","D) Real-time big data"],a:"A, B, C",x:"Good for small spaces, critical correctness, baselines. Too slow for big real-time."},
+{q:"Faster-growing than O(n log n)? (Select all)",ch:"Ch.1 (Mod 01)",o:["A) O(n)","B) O(n²)","C) O(2ⁿ)","D) O(n!)"],a:"B, C, D",x:"O(n) is slower-growing. n², 2ⁿ, n! all grow faster."},
+{q:"Binary heap properties? (Select all)",ch:"Ch.2 (Mod 02)",o:["A) Complete binary tree","B) Parent ≥ children (max-heap)","C) O(1) min extraction","D) O(log n) insertion"],a:"A, B, D",x:"Complete tree, heap property, O(log n) insert. Extract-max is O(log n) not O(1)."},
+{q:"Brute-force password search space depends on? (Select all)",ch:"Ch.5 (Mod 05)",o:["A) Character set size","B) Password length","C) Hash speed","D) CPU speed"],a:"A, B",x:"Space = Cᴸ. Hash/CPU speed affect time, not space size."},
+{q:"BFS characteristics? (Select all)",ch:"Ch.4 (Mod 04)",o:["A) Uses queue (FIFO)","B) Level-by-level processing","C) Naturally recursive","D) Memory O(w)"],a:"A, B, D",x:"BFS: queue, level-by-level, O(w) memory. Naturally ITERATIVE."},
+{q:"Systems using priority queues? (Select all)",ch:"Ch.2 (Mod 02)",o:["A) ER triage","B) OS process scheduling","C) Router QoS","D) Alphabetical file sorting"],a:"A, B, C",x:"Triage, scheduling, QoS use priority. Alphabetical uses comparison sort."},
+{q:"True about QuickSort pivot? (Select all)",ch:"Ch.2 (Mod 02)",o:["A) First-element → O(n²) on sorted","B) Middle helps avoid worst case","C) Random pivot is common fix","D) Pivot choice doesn't matter"],a:"A, B, C",x:"Pivot selection is critical for performance."},
+{q:"Benefits of iterative DFS over recursive? (Select all)",ch:"Ch.4 (Mod 04)",o:["A) No stack overflow risk","B) Predictable memory","C) Same traversal order","D) Faster compilation"],a:"A, B, C",x:"Explicit stack avoids overflow, controls memory, preserves DFS order."},
+{q:"Degenerate BST properties? (Select all)",ch:"Ch.3 (Mod 03)",o:["A) Single-child nodes","B) Height = n","C) Search O(n)","D) Linked list shape"],a:"A, B, C, D",x:"All describe a degenerate BST."},
+{q:"O(n log n) algorithms? (Select all)",ch:"Ch.1&2 (Mod 01-02)",o:["A) MergeSort","B) HeapSort","C) Binary Search","D) QuickSort (avg)"],a:"A, B, D",x:"MergeSort, HeapSort always; QuickSort average. Binary search is O(log n)."},
+{q:"Iteration preferred when? (Select all)",ch:"Ch.4 (Mod 04)",o:["A) Linear problem","B) Large input","C) Memory matters","D) No TCO support"],a:"A, B, C, D",x:"All favor iteration over recursion."},
+{q:"Network security brute-force tools? (Select all)",ch:"Ch.5 (Mod 05)",o:["A) Port scanners","B) Password crackers","C) Firewalls","D) Vulnerability scanners"],a:"A, B, D",x:"Scanners and crackers use brute-force. Firewalls filter, not brute-force."},
+{q:"BST deletion truths? (Select all)",ch:"Ch.3 (Mod 03)",o:["A) Leaf deletion simplest","B) Two children → in-order successor","C) O(log n) balanced","D) Always O(1)"],a:"A, B, C",x:"Leaf easy, two-child uses successor, balanced=O(log n). NOT O(1)."},
+{q:"Hash concepts in course? (Select all)",ch:"Ch.1&5 (Mod 01,05)",o:["A) Hash tables O(1)","B) Password hashing","C) Salted hashing","D) Reversible hashing"],a:"A, B, C",x:"Hash tables, password hashing, salted hashing appear. Reversible hashing contradicts one-way property."},
+{q:"True about CAPTCHA? (Select all)",ch:"Ch.5 (Mod 05)",o:["A) Stands for Completely Automated Public Turing test...","B) Blocks automated tools","C) Replaces strong passwords","D) Verifies human user"],a:"A, B, D",x:"CAPTCHA verifies humanity and blocks bots. Supplements, not replaces, passwords."},
+{q:"DFS backup tools? (Select all)",ch:"Ch.4 (Mod 04)",o:["A) rsync","B) tar","C) robocopy","D) find (default)"],a:"A, B, D",x:"rsync, tar, find default to DFS. robocopy uses BFS-like approach."},
+{q:"Big-Θ requirements? (Select all)",ch:"Ch.1 (Mod 01)",o:["A) Upper matches lower bound","B) Best and worst same rate","C) Must be constant time","D) Bounded above and below by same class"],a:"A, B, D",x:"Big-Θ requires matching bounds. Constant time is one case, not required."},
+{q:"AVL tree facts? (Select all)",ch:"Ch.3 (Mod 03)",o:["A) Named after Adelson-Velsky & Landis","B) Self-balancing BST","C) Any height difference allowed","D) Rotations restore balance"],a:"A, B, D",x:"AVL is self-balancing BST with max ±1 height difference. 'Any' is wrong."},
+{q:"O(1) operations? (Select all)",ch:"Ch.1 (Mod 01)",o:["A) Array index access","B) Stack emptiness check","C) Sorting an array","D) Hash table lookup (avg)"],a:"A, B, D",x:"Direct computation, no scanning. Sorting needs O(n log n) minimum."},
+{q:"What increases brute-force cracking time? (Select all)",ch:"Ch.5 (Mod 05)",o:["A) Longer passwords","B) Larger character sets","C) Faster hardware","D) Account lockout"],a:"A, B, D",x:"Length & charset grow search space. Lockout limits attempts. Fast hardware DECREASES time."},
+{q:"Priority queue operations? (Select all)",ch:"Ch.2 (Mod 02)",o:["A) Insert O(log n)","B) Extract-max O(log n)","C) Peek O(1)","D) All O(1)"],a:"A, B, C",x:"Insert & extract need bubbling (log n). Peek reads root (O(1)). Not all O(1)."},
+{q:"Brute-force drawbacks? (Select all)",ch:"Ch.5 (Mod 05)",o:["A) Exponential time for many problems","B) Impractical for large spaces","C) Cannot guarantee solutions","D) Scales poorly"],a:"A, B, D",x:"Exponential, impractical at scale, poor scaling. But DOES guarantee finding solutions."},
+{q:"MergeSort properties? (Select all)",ch:"Ch.2 (Mod 02)",o:["A) Divide-and-conquer","B) Stable","C) In-place O(1)","D) Worst case O(n log n)"],a:"A, B, D",x:"Divides, stable, guaranteed O(n log n). Uses O(n) space — NOT in-place."},
+];
+
+const essays=[
+{q:"Explain Big-O, Big-Ω, and Big-Θ using a real-world analogy. Why have all three?",ch:"Ch.1 (Mod 01)",a:"Big-O is the longest your commute could ever take (accident + construction). Big-Ω is the fastest (every green light). Big-Θ is your typical daily drive when best and worst grow at the same rate. Having all three lets engineers plan for disasters (Big-O for capacity), understand theoretical limits (Big-Ω for lower bounds), and set realistic expectations (Big-Θ for average). Worst-case analysis via Big-O is most common because servers must handle peak load."},
+{q:"Why does QuickSort sometimes degrade to O(n²) while MergeSort stays O(n log n)?",ch:"Ch.2 (Mod 02)",a:"QuickSort depends on pivot selection. If the pivot is always the extreme value (sorted input with first-element pivot), each partition has one empty side and one (n-1) side, creating n levels of n work = O(n²). MergeSort always splits exactly in half regardless of content, guaranteeing log n levels. Data-dependent behavior introduces risk; consistent splitting eliminates it."},
+{q:"A BST with 1,000 nodes can have height 10 or 1,000. Explain why and its impact.",ch:"Ch.3 (Mod 03)",a:"Random insertions spread nodes evenly → height ≈ log₂(1000) ≈ 10. Sorted insertions (1,2,...,1000) chain nodes one-directionally → height 1,000. Balanced: 10-comparison search (O(log n)). Degenerate: 1,000-comparison search (O(n)). This 100× difference is why AVL/Red-Black trees are used in production."},
+{q:"What happens when a recursive function calls itself 10,000 times in Python?",ch:"Ch.4 (Mod 04)",a:"Each call allocates a stack frame. At ~1,000 calls Python raises RecursionError (stack overflow). The 10,000 frames far exceed the limit. Iterative alternative uses one frame and a loop variable, keeping memory O(1) regardless of count. For deep recursion in Python, convert to iterative with explicit stack."},
+{q:"How does salted hashing defeat rainbow table attacks?",ch:"Ch.5 (Mod 05)",a:"Rainbow tables map common passwords to their hashes. Without salt, identical passwords produce identical hashes — one lookup cracks all. Salted hashing adds a unique random value before hashing, so 'hello123' with different salts produces completely different hashes. The precomputed table becomes useless; each password must be brute-forced individually, multiplying total cracking time."},
+{q:"Compare DFS and BFS for file system backup. When prefer each?",ch:"Ch.4 (Mod 04)",a:"DFS follows one branch to the bottom before backtracking. If interrupted: some directories fully saved, others untouched — good when complete project folders matter most. BFS processes all folders at each level first. If interrupted: partial coverage everywhere — good when breadth matters more. DFS uses O(depth) memory; BFS uses O(width) memory."},
+{q:"How does a priority queue manage ER patients? What about same-priority ties?",ch:"Ch.2 (Mod 02)",a:"Each patient gets a triage level (1=critical to 5=minor). The binary heap always serves the highest priority next. Insert: O(log n) bubble-up. Extract: O(log n) bubble-down. Same-priority ties broken by arrival time — earlier arrival treated first, ensuring both urgency and fairness."},
+{q:"Why recommend 12+ character mixed passwords? Support with math.",ch:"Ch.5 (Mod 05)",a:"Search space = C^L. A 6-char lowercase: 26⁶ ≈ 309M — cracked in seconds. A 12-char full ASCII: 95¹² ≈ 5.4×10²³ — over 17 million years at 10B guesses/sec. Length matters more than diversity: it is the exponent. Doubling length squares the space; doubling charset only doubles per-position choices."},
+{q:"What is TCO and why did Python's creator reject it?",ch:"Ch.4 (Mod 04)",a:"TCO reuses the current stack frame when the last operation is a recursive call with no remaining work, converting recursion to iteration at machine level (O(1) memory). Guido van Rossum excluded TCO because it removes intermediate stack frames from error traces, making debugging harder in a language prioritizing readability and developer experience."},
+{q:"Why does sorting algorithm choice matter for 45,000 registration records during a brief window?",ch:"Ch.2 (Mod 02)",a:"O(n²) on 45K records ≈ 2 billion operations — system freezes for minutes. O(n log n) ≈ 700K operations — milliseconds. During peak registration, delay compounds into unresponsiveness. MergeSort is ideal: guaranteed O(n log n) eliminates worst-case risk, and stability preserves timestamp order among equal-priority students."},
+{q:"How do AVL trees maintain balance? What triggers a rotation?",ch:"Ch.3 (Mod 03)",a:"Each node tracks a balance factor (left height − right height). After insert/delete, factors are recalculated from modified node to root. If any exceeds ±1, a rotation fires: LL→right rotation, RR→left rotation, LR/RL→double rotation. Each rotation is O(1) and restores O(log n) height."},
+{q:"Relate Big-O notation to web server capacity planning.",ch:"Ch.1 (Mod 01)",a:"Big-O tells how resource usage grows with input. If a search endpoint uses O(n) on 10M records, each query might touch all 10M under worst-case load. Upgrading to O(log n) reduces to ~23 operations. Servers must handle worst-case at max concurrency. O(n²) algorithms cause cascading failures during traffic spikes even on powerful hardware."},
+{q:"Give an example where brute-force is the best available strategy.",ch:"Ch.5 (Mod 05)",a:"The Travelling Salesman Problem (TSP): find the shortest route visiting n cities once. Brute-force checks all n! permutations. TSP is NP-hard — no polynomial algorithm is known. While heuristics find good approximations, only brute-force (or branch-and-bound pruning) guarantees the optimal solution. For small n (<15-20), it remains practical."},
+{q:"Why is hash table O(1) while BST is O(log n)? What's the trade-off?",ch:"Ch.1&3 (Mod 01,03)",a:"Hash tables compute position directly from the key — no comparisons. BSTs compare at each node, following log n pointers. Trade-off: BSTs maintain sorted order, supporting range queries and in-order traversal. Hash tables scatter elements unpredictably. For exact-match only → hash table wins. For ordered operations → BST wins."},
+{q:"Compare recursive DFS vs. iterative BFS memory on a tree: depth 20, max width 1,048,576.",ch:"Ch.4 (Mod 04)",a:"Recursive DFS: O(depth) = O(20) = 20 frames (~kilobytes). BFS: O(width) = O(1,048,576) nodes in queue (~megabytes). For this wide shallow tree, DFS is dramatically more memory-efficient. For narrow deep trees, BFS would use less. Optimal choice depends on tree shape."},
+{q:"What role does NIST play in password security?",ch:"Ch.5 (Mod 05)",a:"NIST publishes SP 800-63B (Digital Identity Guidelines) setting password standards informed by brute-force math: minimum 8 characters, longer passphrases encouraged. They recommend checking against breach databases and discourage forced periodic changes (which lead to weaker passwords). Their guidelines apply algorithmic complexity analysis to real-world security policy."},
+{q:"Explain sorting stability with a practical example.",ch:"Ch.2 (Mod 02)",a:"A stable sort preserves relative order of equal elements. Example: students sorted by GPA — if two have 3.5 GPA, stable sort keeps their original order (perhaps alphabetical). To sort by GPA then name: first sort by name, then stable-sort by GPA. The name order is preserved within GPA groups. MergeSort is stable; HeapSort and basic QuickSort are not."},
+{q:"How does port scanning exemplify brute-force? Why is it both legitimate and potentially malicious?",ch:"Ch.5 (Mod 05)",a:"Port scanning tests all 65,536 TCP ports exhaustively — O(p) per host. For security teams, it reveals misconfigurations before attackers find them. For attackers, it identifies vulnerable services. The dual nature is inherent: exhaustive coverage guarantees nothing is missed — for defender or attacker alike. Organizations must scan themselves proactively."},
+{q:"Why study both best and worst case, not just average?",ch:"Ch.1 (Mod 01)",a:"Best case reveals theoretical speed limits (e.g., Insertion Sort O(n) on near-sorted data). Worst case ensures reliability under adverse conditions — systems must not crash during peak load. Average-only planning ignores adversarial inputs that trigger worst-case behavior (algorithmic complexity attacks). Well-engineered systems account for all three."},
+{q:"How does the AVL balance factor guarantee O(log n) operations?",ch:"Ch.3 (Mod 03)",a:"Balance factor = left height − right height, kept within {-1, 0, +1}. After any modification, rotations restore this invariant. Mathematically, an AVL tree of height h has at least F(h+2)-1 nodes (Fibonacci). This means height never exceeds ~1.44 × log₂(n), guaranteeing all operations remain O(log n)."},
+];
+
+// ═══════════════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ═══════════════════════════════════════════════════════
+const modes={mcq:'study',msq:'study'};
+const scores={mcq:{correct:0,total:0,answered:new Set()},msq:{correct:0,total:0,answered:new Set()}};
+
+// ═══════════════════════════════════════════════════════
+// RENDER — Case Studies (accordion: scenario visible, answer on click)
+// ═══════════════════════════════════════════════════════
+function renderCases(){
+  const el=document.getElementById('caseStudyGroup');
+  el.innerHTML='';
+  caseStudies.forEach((item,i)=>{
+    const num=i+1;
+    const div=document.createElement('div');
+    div.className='toggle-item case-card';
+    div.setAttribute('data-search',(item.t+' '+item.q+' '+item.a+' '+item.ch).toLowerCase());
+    div.innerHTML=`
+      <div class="toggle-q" onclick="toggleItem(this)"><strong>Case Study ${num}: ${item.t}</strong><span></span></div>
+      <div class="toggle-a">
+        <div class="toggle-meta">${item.ch}</div>
+        <div class="scenario">${item.s}</div>
+        <div class="question-line">${item.q}</div>
+        <button class="reveal-btn" onclick="revealAnswer(this)">▶ Reveal Model Answer</button>
+        <div class="hidden-answer" style="display:none">
+          <div class="toggle-answer"><strong>Model Answer:</strong> ${item.a}</div>
+        </div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER — Essays (question always visible, answer behind reveal button)
+// ═══════════════════════════════════════════════════════
+function renderEssays(){
+  const el=document.getElementById('essayGroup');
+  el.innerHTML='';
+  essays.forEach((item,i)=>{
+    const num=i+1;
+    const div=document.createElement('div');
+    div.className='toggle-item';
+    div.setAttribute('data-search',(item.q+' '+item.a+' '+item.ch).toLowerCase());
+    div.innerHTML=`
+      <div class="toggle-q" onclick="toggleItem(this)"><strong>Essay ${num}.</strong> ${item.q}<span></span></div>
+      <div class="toggle-a">
+        <div class="toggle-meta">${item.ch}</div>
+        <button class="reveal-btn" onclick="revealAnswer(this)">▶ Reveal Model Answer</button>
+        <div class="hidden-answer" style="display:none">
+          <div class="toggle-answer"><strong>Model Answer:</strong> ${item.a}</div>
+        </div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER — MCQ / MSQ  (Study Mode vs Test Mode)
+// ═══════════════════════════════════════════════════════
+function renderQuiz(type){
+  const items = type==='mcq' ? mcqs : msqs;
+  const el = document.getElementById(type+'Group');
+  const mode = modes[type];
+  el.innerHTML='';
+
+  items.forEach((item,i)=>{
+    const num=i+1;
+    const div=document.createElement('div');
+    div.className='toggle-item';
+    div.id=`${type}-q-${i}`;
+    div.setAttribute('data-search',(item.q+' '+item.a+' '+(item.x||'')+' '+item.ch).toLowerCase());
+
+    if(mode==='study'){
+      // STUDY MODE: click question → shows options + answer + explanation together
+      div.innerHTML=`
+        <div class="toggle-q" onclick="toggleItem(this)"><strong>${type.toUpperCase()} ${num}.</strong> ${item.q}<span></span></div>
+        <div class="toggle-a">
+          <div class="toggle-meta">${item.ch}</div>
+          ${item.o?`<ul class="opts">${item.o.map(o=>`<li>${o}</li>`).join('')}</ul>`:''}
+          <button class="reveal-btn" onclick="revealAnswer(this)">▶ Reveal Answer &amp; Explanation</button>
+          <div class="hidden-answer" style="display:none">
+            <div class="toggle-answer"><strong>Answer:</strong> ${item.a}</div>
+            <div class="toggle-explain"><strong>Explanation:</strong> ${item.x}</div>
+          </div>
+        </div>`;
+    } else {
+      // TEST MODE: click question → shows clickable option buttons, score tracked
+      const isAnswered = scores[type].answered.has(i);
+      const optLetters = item.o.map(o=>o.charAt(0));
+      const correctLetters = item.a.split(',').map(s=>s.trim());
+
+      let optsHTML = item.o.map((o,oi)=>{
+        const letter = o.charAt(0);
+        const isCorrect = correctLetters.includes(letter);
+        if(isAnswered){
+          // Already answered — show result styling
+          const cls = isCorrect ? 'opt-btn opt-correct' : 'opt-btn opt-wrong';
+          return `<button class="${cls}" disabled>${o}</button>`;
+        } else {
+          return `<button class="opt-btn" onclick="handleTestAnswer('${type}',${i},this,'${letter}')">${o}</button>`;
+        }
+      }).join('');
+
+      let feedbackHTML = '';
+      if(isAnswered){
+        feedbackHTML=`
+          <div class="toggle-answer" style="margin-top:.6rem"><strong>Answer:</strong> ${item.a}</div>
+          <div class="toggle-explain"><strong>Explanation:</strong> ${item.x}</div>`;
+      }
+
+      div.innerHTML=`
+        <div class="toggle-q" onclick="toggleItem(this)"><strong>${type.toUpperCase()} ${num}.</strong> ${item.q}<span></span></div>
+        <div class="toggle-a">
+          <div class="toggle-meta">${item.ch}</div>
+          <div class="opt-group" data-idx="${i}">${optsHTML}</div>
+          ${type==='msq' && !isAnswered ? `<button class="submit-msq-btn" onclick="submitMSQ('${type}',${i},this)">✔ Submit Selection</button>` : ''}
+          <div class="test-feedback" id="${type}-fb-${i}">${feedbackHTML}</div>
+        </div>`;
+    }
+    el.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// TEST MODE — Handle answer selection
+// ═══════════════════════════════════════════════════════
+function handleTestAnswer(type, idx, btn, letter){
+  const items = type==='mcq' ? mcqs : msqs;
+  const item = items[idx];
+  const correctLetters = item.a.split(',').map(s=>s.trim());
+
+  if(type==='mcq'){
+    // MCQ: single select — immediately evaluate
+    scores[type].answered.add(idx);
+    scores[type].total++;
+    const isCorrect = correctLetters.includes(letter);
+    if(isCorrect) scores[type].correct++;
+    updateScore(type);
+
+    // Style all buttons in this question
+    const group = btn.parentElement;
+    group.querySelectorAll('.opt-btn').forEach(b=>{
+      b.disabled=true;
+      const bLetter = b.textContent.charAt(0);
+      if(correctLetters.includes(bLetter)){
+        b.classList.add('opt-correct');
+      } else if(bLetter===letter && !isCorrect){
+        b.classList.add('opt-wrong');
+      }
+    });
+
+    // Show feedback
+    const fb = document.getElementById(`${type}-fb-${idx}`);
+    fb.innerHTML=`
+      <div class="test-result ${isCorrect?'result-correct':'result-wrong'}">${isCorrect?'✅ Correct!':'❌ Incorrect'}</div>
+      <div class="toggle-answer"><strong>Answer:</strong> ${item.a}</div>
+      <div class="toggle-explain"><strong>Explanation:</strong> ${item.x}</div>`;
+  } else {
+    // MSQ: multi-select — toggle selection on button
+    btn.classList.toggle('opt-selected');
+  }
+}
+
+function submitMSQ(type, idx, submitBtn){
+  const items = type==='mcq' ? mcqs : msqs;
+  const item = items[idx];
+  const correctLetters = item.a.split(',').map(s=>s.trim());
+
+  const group = submitBtn.previousElementSibling.tagName==='DIV'
+    ? submitBtn.parentElement.querySelector(`.opt-group[data-idx="${idx}"]`)
+    : submitBtn.parentElement.querySelector(`.opt-group[data-idx="${idx}"]`);
+
+  const selected = [];
+  group.querySelectorAll('.opt-btn').forEach(b=>{
+    if(b.classList.contains('opt-selected')) selected.push(b.textContent.charAt(0));
+  });
+
+  if(selected.length===0){ alert('Please select at least one option.'); return; }
+
+  scores[type].answered.add(idx);
+  scores[type].total++;
+  const isCorrect = selected.length===correctLetters.length && selected.every(l=>correctLetters.includes(l));
+  if(isCorrect) scores[type].correct++;
+  updateScore(type);
+
+  // Style buttons
+  group.querySelectorAll('.opt-btn').forEach(b=>{
+    b.disabled=true;
+    const bLetter = b.textContent.charAt(0);
+    if(correctLetters.includes(bLetter)){
+      b.classList.add('opt-correct');
+    } else if(b.classList.contains('opt-selected')){
+      b.classList.add('opt-wrong');
+    }
+    b.classList.remove('opt-selected');
+  });
+
+  submitBtn.style.display='none';
+
+  const fb = document.getElementById(`${type}-fb-${idx}`);
+  fb.innerHTML=`
+    <div class="test-result ${isCorrect?'result-correct':'result-wrong'}">${isCorrect?'✅ Correct!':'❌ Incorrect — correct answers: '+item.a}</div>
+    <div class="toggle-answer"><strong>Answer:</strong> ${item.a}</div>
+    <div class="toggle-explain"><strong>Explanation:</strong> ${item.x}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// GENERIC HELPERS
+// ═══════════════════════════════════════════════════════
+function toggleItem(el){
+  el.parentElement.classList.toggle('open');
+}
+
+function revealAnswer(btn){
+  const hidden = btn.nextElementSibling;
+  if(hidden && hidden.classList.contains('hidden-answer')){
+    if(hidden.style.display==='none'){
+      hidden.style.display='block';
+      btn._origText = btn.textContent;
+      btn.textContent='▼ Hide Answer';
+    } else {
+      hidden.style.display='none';
+      btn.textContent = btn._origText || '▶ Reveal Model Answer';
+    }
+  }
+}
+
+function setMode(type,mode){
+  modes[type]=mode;
+  document.querySelectorAll(`#sec-${type} .quiz-btn`).forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(`${type}Score`).style.display=mode==='test'?'flex':'none';
+  renderQuiz(type);
+}
+
+function resetQuiz(type){
+  scores[type]={correct:0,total:0,answered:new Set()};
+  updateScore(type);
+  renderQuiz(type);
+}
+
+function updateScore(type){
+  const s=scores[type];
+  const pct=s.total?Math.round(s.correct/s.total*100):0;
+  document.getElementById(`${type}ScoreText`).textContent=`Score: ${s.correct} / ${s.total} (${pct}%)`;
+  document.getElementById(`${type}Fill`).style.width=pct+'%';
+}
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION & SEARCH
+// ═══════════════════════════════════════════════════════
+function showSection(sec){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('section[data-section]').forEach(s=>{
+    s.style.display=(sec==='all'||s.dataset.section===sec)?'block':'none';
+  });
+}
+
+let quizMode=false;
+function toggleQuizMode(){
+  quizMode=!quizMode;
+  const btn=event.target;
+  btn.classList.toggle('active',quizMode);
+
+  if(quizMode){
+    // Activate Test Mode for BOTH MCQ and MSQ
+    modes.mcq='test'; modes.msq='test';
+    document.querySelectorAll('#sec-mcq .quiz-btn, #sec-msq .quiz-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#sec-mcq .quiz-btn:nth-child(2), #sec-msq .quiz-btn:nth-child(2)').forEach(b=>b.classList.add('active'));
+    document.getElementById('mcqScore').style.display='flex';
+    document.getElementById('msqScore').style.display='flex';
+    renderQuiz('mcq'); renderQuiz('msq');
+    // Collapse all open items everywhere
+    document.querySelectorAll('.toggle-item.open').forEach(el=>el.classList.remove('open'));
+    // Show MCQ+MSQ sections, hide others
+    showSectionDirect('all');
+  } else {
+    // Deactivate — go back to Study Mode
+    modes.mcq='study'; modes.msq='study';
+    document.querySelectorAll('#sec-mcq .quiz-btn, #sec-msq .quiz-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#sec-mcq .quiz-btn:first-child, #sec-msq .quiz-btn:first-child').forEach(b=>b.classList.add('active'));
+    document.getElementById('mcqScore').style.display='none';
+    document.getElementById('msqScore').style.display='none';
+    renderQuiz('mcq'); renderQuiz('msq');
+    showSectionDirect('all');
+  }
+}
+
+function showSectionDirect(sec){
+  document.querySelectorAll('section[data-section]').forEach(s=>{
+    s.style.display=(sec==='all'||s.dataset.section===sec)?'block':'none';
+  });
+}
+
+function filterContent(query){
+  const q=query.toLowerCase().trim();
+  document.querySelectorAll('.card, .toggle-item').forEach(el=>{
+    const text=(el.getAttribute('data-search')||'')+' '+(el.textContent||'').toLowerCase();
+    el.style.display=(!q||text.includes(q))?'':'none';
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+renderCases();
+renderQuiz('mcq');
+renderQuiz('msq');
+renderEssays();
+</script>
+</body>
+</html>
