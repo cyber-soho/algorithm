@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Programming: Study Canvas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Custom CSS for Flashcard Flip Effect */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .group:hover .group-hover\:rotate-y-180 { transform: rotateY(180deg); }
+        
+        /* Tab styling */
+        .nav-btn.active {
+            border-bottom-width: 4px;
+            border-color: #d97757; /* terracotta */
+            color: #d97757;
+            font-weight: 700;
+        }
+
+        /* Hide scrollbar for nav */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 font-sans leading-relaxed min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-sm border-b border-stone-200 pt-8 pb-6 px-4 md:px-8 relative">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-sm font-semibold tracking-wider text-teal-700 uppercase mb-2">Study Module</div>
+            <h1 class="text-3xl md:text-5xl font-extrabold text-stone-900 mb-2 tracking-tight">Dynamic Programming</h1>
+            <p class="text-lg text-stone-600">Flashcards & Practice Quiz</p>
+        </div>
+    </header>
+
+    <nav class="bg-white sticky top-0 z-10 shadow-sm border-b border-stone-200">
+        <div class="max-w-6xl mx-auto px-4 md:px-8 flex overflow-x-auto hide-scrollbar">
+            <button onclick="switchTab('flashcards')" id="btn-flashcards" class="nav-btn active px-6 py-4 text-stone-500 font-medium whitespace-nowrap transition-colors hover:text-stone-800 focus:outline-none">Flashcards (25)</button>
+            <button onclick="switchTab('quiz')" id="btn-quiz" class="nav-btn px-6 py-4 text-stone-500 font-medium whitespace-nowrap transition-colors hover:text-stone-800 focus:outline-none">Practice Quiz (10)</button>
+        </div>
+    </nav>
+
+    <main class="flex-grow w-full max-w-6xl mx-auto px-4 md:px-8 py-8">
+
+        <section id="flashcards" class="tab-content block">
+            <div class="mb-6 flex justify-between items-end">
+                <div>
+                    <h2 class="text-2xl font-bold text-stone-900">Concept Review</h2>
+                    <p class="text-stone-600">Hover over (or tap) the cards to reveal the answers.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="flashcard-grid">
+                </div>
+        </section>
+
+        <section id="quiz" class="tab-content hidden">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-900">Knowledge Check</h2>
+                <p class="text-stone-600">Select the best answer for each question. Instant feedback is provided.</p>
+            </div>
+
+            <div class="space-y-8" id="quiz-container">
+                </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-900 text-stone-400 py-6 text-center text-sm mt-auto">
+        <div class="max-w-6xl mx-auto px-4">
+            <p>&copy; 2026 Educational Study Canvas</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Navigation Logic ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + tabId).classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+        }
+
+        // --- Data ---
+        const flashcardsData = [
+            { front: "Dynamic Programming (DP)", back: "A technique for solving problems by breaking them into smaller overlapping subproblems." },
+            { front: "Core philosophy of DP", back: "Never solve the same problem twice; store results and look them up instead of recomputing." },
+            { front: "Time complexity of naive recursive Fibonacci", back: "\\(O(2^n)\\) (exponential time)" },
+            { front: "Time complexity of DP-optimized Fibonacci", back: "\\(O(n)\\) (linear time)" },
+            { front: "Two primary DP implementation strategies", back: "Memoization and Tabulation" },
+            { front: "Memoization", back: "A top-down approach that adds a cache (dictionary/list) to a recursive function to store results." },
+            { front: "Evaluation style of Memoization", back: "Lazy evaluation (only computes what is actually needed)." },
+            { front: "Tabulation", back: "A bottom-up approach that iteratively fills a table (array) building upward from base cases." },
+            { front: "Evaluation style of Tabulation", back: "Eager evaluation (computes all subproblems in order)." },
+            { front: "Main risk associated with Memoization", back: "Stack overflow risk due to deep recursion." },
+            { front: "Condition favoring Tabulation over Memoization", back: "When all subproblems need to be computed or when deep recursion is a risk." },
+            { front: "Condition favoring Memoization over Tabulation", back: "When only some subproblems are needed, allowing the algorithm to skip unnecessary work." },
+            { front: "Two required properties for DP to work", back: "Overlapping Subproblems and Optimal Substructure." },
+            { front: "Overlapping Subproblems", back: "A property where the same smaller problems recur repeatedly during computation." },
+            { front: "Optimal Substructure", back: "A property where a problem's globally optimal solution contains the optimal solutions to its subproblems." },
+            { front: "Classic routing problem demonstrating Optimal Substructure", back: "The Shortest Path problem." },
+            { front: "Classic routing problem lacking Optimal Substructure", back: "The Longest Simple Path problem." },
+            { front: "Reason Longest Simple Path lacks Optimal Substructure", back: "The no-revisiting constraint breaks the independence and nesting property of subproblems." },
+            { front: "Three criteria to spot Optimal Substructure", back: "Smaller versions must be the same type of problem, they must combine optimally, and subproblems must be independent." },
+            { front: "Bellman-Ford Algorithm", back: "A pure DP tabulation solution to the shortest path problem, heavily used in network routing." },
+            { front: "Routing Information Protocol (RIP)", back: "A networking protocol standardized by the IETF that relies directly on the Bellman-Ford algorithm." },
+            { front: "QoS (Quality of Service) Routing", back: "Routing designed to satisfy multiple constraints simultaneously (e.g., minimum bandwidth AND lowest delay)." },
+            { front: "Cloud resource scheduling algorithm category", back: "A variant of the Knapsack Problem." },
+            { front: "Analogs of 'Knapsack' and 'Items' in resource scheduling", back: "Knapsack = server capacity, Items = jobs." },
+            { front: "Did you know who coined the term 'Dynamic Programming'?", back: "Richard Bellman, who also co-created the Bellman-Ford algorithm used in modern networking." }
+        ];
+
+        const quizData = [
+            {
+                q: "What is the primary performance benefit of using Dynamic Programming to optimize a naive recursive algorithm, such as calculating the Fibonacci sequence?",
+                options: [
+                    { text: "It transforms polynomial-time algorithms into constant-time solutions.", correct: false, rationale: "Dynamic Programming typically reduces algorithms from exponential down to polynomial time." },
+                    { text: "It transforms exponential-time algorithms into polynomial-time solutions.", correct: true, rationale: "By caching previously computed results, DP prevents redundant branching, reducing time complexity to a polynomial rate like \\(O(n)\\)." },
+                    { text: "It eliminates the need for base cases in recursive algorithms.", correct: false, rationale: "Base cases are strictly necessary in DP to provide initial values for the smallest subproblems." },
+                    { text: "It reduces the overall space complexity by avoiding the use of data structures.", correct: false, rationale: "DP inherently increases space complexity because it requires extra memory to store cached results." }
+                ]
+            },
+            {
+                q: "Which of the following best describes the evaluation strategy used in Memoization?",
+                options: [
+                    { text: "Eager evaluation, which computes all possible subproblems in order.", correct: false, rationale: "This describes Tabulation, which builds a complete table from the bottom up." },
+                    { text: "Concurrent evaluation, which solves independent subproblems in parallel.", correct: false, rationale: "Standard memoization relies on a sequential recursive call stack." },
+                    { text: "Lazy evaluation, which computes only the subproblems that are actually needed.", correct: true, rationale: "Memoization works top-down and only solves a subproblem if it is encountered during the recursive descent." },
+                    { text: "Iterative evaluation, which continuously loops until a cache is filled.", correct: false, rationale: "Memoization relies on recursion; iterative looping is characteristic of Tabulation." }
+                ]
+            },
+            {
+                q: "Why might a developer choose Tabulation over Memoization when solving a problem that breaks down into millions of subproblems?",
+                options: [
+                    { text: "Tabulation avoids the risk of stack overflow associated with deep recursion.", correct: true, rationale: "Because Tabulation uses an iterative bottom-up loop, it does not build up a massive call stack that could crash the program." },
+                    { text: "Tabulation allows the algorithm to skip unnecessary subproblems.", correct: false, rationale: "Tabulation uses eager evaluation (computes everything); Memoization skips unnecessary work." },
+                    { text: "Tabulation does not require an array or table to store intermediate results.", correct: false, rationale: "Tabulation fundamentally requires an array or table to build solutions." },
+                    { text: "Tabulation is generally much easier to write and conceptualize initially.", correct: false, rationale: "Memoization is often easier to write initially because it mirrors the natural recursive definition." }
+                ]
+            },
+            {
+                q: "What two essential properties must a problem exhibit for Dynamic Programming to be a viable solution strategy?",
+                options: [
+                    { text: "Independent Subproblems and Eager Evaluation", correct: false, rationale: "Eager evaluation is an implementation choice, not a property of the problem itself." },
+                    { text: "Overlapping Subproblems and Optimal Substructure", correct: true, rationale: "The problem must require solving the same subproblems repeatedly, and the global solution must be composable from optimal sub-solutions." },
+                    { text: "Linear Time Complexity and Polynomial Space Complexity", correct: false, rationale: "These are potential performance outcomes, not structural prerequisites." },
+                    { text: "Top-Down Structure and Base Case Isolation", correct: false, rationale: "A top-down structure is only one way to solve a DP problem." }
+                ]
+            },
+            {
+                q: "Why does the 'Longest Simple Path' problem fail to be solvable by standard Dynamic Programming?",
+                options: [
+                    { text: "The problem naturally requires exponential space complexity.", correct: false, rationale: "The failure is due to optimal sub-paths structure, not just memory constraints." },
+                    { text: "It does not have overlapping subproblems.", correct: false, rationale: "Sub-paths might overlap, but the issue is how they combine." },
+                    { text: "The subproblems lack independence because choosing a specific long path might block access to remaining required nodes.", correct: true, rationale: "The 'no revisiting' constraint means combining optimal pieces might create an invalid route." },
+                    { text: "It requires eager evaluation, which is incompatible with pathfinding.", correct: false, rationale: "Eager evaluation can absolutely be used in pathfinding (e.g., Bellman-Ford)." }
+                ]
+            },
+            {
+                q: "When verifying if a problem has Optimal Substructure, which of the following is one of the critical questions you should ask?",
+                options: [
+                    { text: "Can the problem be solved in linear time?", correct: false, rationale: "Time complexity is a result of the algorithm, not a test for DP suitability." },
+                    { text: "Are the subproblems independent enough that solving one doesn't ruin another?", correct: true, rationale: "Finding the best solution for one part must not restrict or invalidate the best solution for another part." },
+                    { text: "Does the problem require a hash map for storage?", correct: false, rationale: "Data structure choice relates to Memoization vs Tabulation, not optimal substructure." },
+                    { text: "Can the algorithm run without any base cases?", correct: false, rationale: "Every recursive/iterative problem requires base cases." }
+                ]
+            },
+            {
+                q: "Which foundational networking algorithm relies on pure Dynamic Programming tabulation to find the shortest path?",
+                options: [
+                    { text: "The Git Diff Algorithm", correct: false, rationale: "Used for text comparison, not routing." },
+                    { text: "The Knapsack Algorithm", correct: false, rationale: "Used for resource scheduling, not routing paths." },
+                    { text: "The Bellman-Ford Algorithm", correct: true, rationale: "Routers iteratively build a cost table from the bottom up to find optimal paths." },
+                    { text: "The Fibonacci Sequence Protocol", correct: false, rationale: "Fibonacci is not a networking protocol." }
+                ]
+            },
+            {
+                q: "How does QoS (Quality of Service) routing fundamentally differ from standard shortest path routing?",
+                options: [
+                    { text: "It requires paths to satisfy multiple constraints simultaneously, such as minimum bandwidth and lowest delay.", correct: true, rationale: "Standard routing minimizes a single metric; QoS uses DP to filter paths meeting multi-variable requirements." },
+                    { text: "It relies exclusively on Memoization rather than Tabulation.", correct: false, rationale: "Routing protocols generally rely on iterative table building (Tabulation)." },
+                    { text: "It deliberately ignores the optimal substructure property.", correct: false, rationale: "Ignoring optimal substructure would result in incorrect routes." },
+                    { text: "It focuses solely on minimizing the number of hops.", correct: false, rationale: "Focusing solely on hops is how standard routing works, which QoS improves upon." }
+                ]
+            },
+            {
+                q: "Cloud providers assigning jobs to servers to maximize completed work is an application of which DP problem?",
+                options: [
+                    { text: "The Longest Common Subsequence", correct: false, rationale: "Used for comparing sequences like DNA or text." },
+                    { text: "The Shortest Path Problem", correct: false, rationale: "Used for routing or navigation." },
+                    { text: "The Knapsack Problem", correct: true, rationale: "Resource scheduling treats server capacity as the knapsack and jobs as items to maximize value." },
+                    { text: "The Fibonacci Calculation", correct: false, rationale: "Does not involve capacity constraints." }
+                ]
+            },
+            {
+                q: "In the Bellman-Ford algorithm, what action does a router take when it discovers it can reach a destination cheaper through a new neighbor?",
+                options: [
+                    { text: "It immediately updates its cost table to reflect the new, cheaper route.", correct: true, rationale: "This aligns with Tabulation, continuously updating the table with optimal subproblem solutions." },
+                    { text: "It clears its cache and restarts a top-down recursive function.", correct: false, rationale: "Bellman-Ford uses Tabulation, not top-down Memoization." },
+                    { text: "It discards the new path to maintain stability.", correct: false, rationale: "The algorithm's purpose is to find cheaper paths; discarding improvements defeats optimization." },
+                    { text: "It checks optimal substructure before executing Knapsack.", correct: false, rationale: "It does not use the Knapsack algorithm for pathfinding." }
+                ]
+            }
+        ];
+
+        // --- Render Flashcards ---
+        const grid = document.getElementById('flashcard-grid');
+        flashcardsData.forEach((card, index) => {
+            const cardHTML = `
+                <div class="group h-48 perspective-1000 cursor-pointer">
+                    <div class="relative transform-style-3d transition-transform duration-500 w-full h-full group-hover:rotate-y-180">
+                        <div class="absolute backface-hidden w-full h-full bg-white border border-stone-200 rounded-xl shadow-sm p-5 flex flex-col items-center justify-center text-center">
+                            <span class="text-xs font-bold text-stone-400 absolute top-3 left-3">${index + 1}</span>
+                            <h3 class="font-bold text-stone-800 text-sm md:text-base">${card.front}</h3>
+                        </div>
+                        <div class="absolute rotate-y-180 backface-hidden w-full h-full bg-teal-700 text-white border border-teal-800 rounded-xl shadow-md p-5 flex items-center justify-center text-center">
+                            <p class="text-sm md:text-base">${card.back}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            grid.innerHTML += cardHTML;
+        });
+
+        // --- Render Quiz ---
+        const quizContainer = document.getElementById('quiz-container');
+        quizData.forEach((item, qIndex) => {
+            
+            let optionsHTML = '';
+            item.options.forEach((opt, oIndex) => {
+                // Escape quotes for inline event handler
+                const safeRationale = opt.rationale.replace(/'/g, "\\'");
+                optionsHTML += `
+                    <button class="w-full text-left p-4 rounded-lg border border-stone-200 hover:bg-stone-50 transition-colors focus:outline-none quiz-opt-btn" 
+                            onclick="handleAnswer(this, ${opt.correct}, '${safeRationale}', 'rationale-box-${qIndex}')">
+                        ${opt.text}
+                    </button>
+                `;
+            });
+
+            const questionHTML = `
+                <div class="bg-white p-6 md:p-8 rounded-xl border border-stone-200 shadow-sm" id="question-card-${qIndex}">
+                    <div class="flex gap-4 items-start mb-6">
+                        <div class="bg-stone-100 text-stone-500 font-bold w-8 h-8 flex items-center justify-center rounded shrink-0">${qIndex + 1}</div>
+                        <h3 class="font-bold text-lg text-stone-900 leading-snug">${item.q}</h3>
+                    </div>
+                    <div class="space-y-3 pl-0 md:pl-12">
+                        ${optionsHTML}
+                    </div>
+                    <div id="rationale-box-${qIndex}" class="hidden mt-6 pl-0 md:pl-12 p-4 rounded-lg text-sm border"></div>
+                </div>
+            `;
+            quizContainer.innerHTML += questionHTML;
+        });
+
+        // --- Quiz Logic ---
+        function handleAnswer(btnElement, isCorrect, rationale, rationaleBoxId) {
+            const parentContainer = btnElement.parentElement;
+            
+            // Disable all buttons in this question to prevent multiple clicks
+            const allBtns = parentContainer.querySelectorAll('.quiz-opt-btn');
+            allBtns.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-stone-50', 'cursor-pointer');
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+
+            // Highlight selected button
+            btnElement.classList.remove('opacity-50');
+            if (isCorrect) {
+                btnElement.classList.add('bg-teal-50', 'border-teal-500', 'text-teal-900', 'font-semibold');
+            } else {
+                btnElement.classList.add('bg-red-50', 'border-red-400', 'text-red-900');
+            }
+
+            // Show rationale
+            const rationaleBox = document.getElementById(rationaleBoxId);
+            rationaleBox.classList.remove('hidden');
+            
+            if (isCorrect) {
+                rationaleBox.classList.add('bg-teal-50', 'border-teal-200', 'text-teal-800');
+                rationaleBox.innerHTML = `<strong>Correct!</strong> ${rationale}`;
+            } else {
+                rationaleBox.classList.add('bg-amber-50', 'border-amber-200', 'text-amber-800');
+                rationaleBox.innerHTML = `<strong>Not quite.</strong> ${rationale}`;
+            }
+
+            // Tell MathJax to process newly exposed LaTeX if necessary
+            if (window.MathJax) {
+                MathJax.typesetPromise([rationaleBox]);
+            }
+        }
+    </script>
+</body>
+</html>
+
+

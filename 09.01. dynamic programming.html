@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Programming: The Art of Not Doing the Same Work Twice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Warm Stone & Terracotta (bg-stone-50, text-stone-800, accents of amber-600/terracotta and teal-700) -->
+    <!-- Application Structure Plan: The SPA is structured as an interactive learning dashboard with a tabbed navigation system. This structure was chosen because educational content is best consumed in focused, logical chunks rather than a long, overwhelming scroll. It breaks the lecture into its three core lessons (Mechanics, Theory, Application). Interactive charts demonstrate abstract concepts (like time complexity) visually, and click-to-reveal components encourage active reading for theoretical concepts like optimal substructure. -->
+    <!-- Visualization & Content Choices: 1. Big O Time Complexity -> Line Chart (Chart.js) -> Hover tooltips -> Justification: Visually proves WHY DP is needed by comparing exponential vs linear growth. 2. Memoization vs Tabulation -> Side-by-side interactive grid -> Hover highlights -> Justification: Allows easy comparison of the two distinct strategies. 3. Optimal Substructure Examples -> Clickable HTML Cards -> Click to reveal answer -> Justification: Tests understanding interactively. 4. QoS Network Requirements -> Radar/Bar Chart (Chart.js) -> Hover tooltips -> Justification: Visualizes the multi-constraint nature of network routing discussed in Lesson 3. NO SVG/Mermaid used; all visuals are Canvas or HTML/CSS styled. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+        .nav-btn.active {
+            border-bottom-width: 4px;
+            border-color: #d97757;
+            color: #d97757;
+            font-weight: 700;
+        }
+        .reveal-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .reveal-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .reveal-content {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 font-sans leading-relaxed min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-sm border-b border-stone-200 pt-8 pb-6 px-4 md:px-8 relative">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-sm font-semibold tracking-wider text-teal-700 uppercase mb-2">Algorithms &mdash; Week 09, Module 07</div>
+            <h1 class="text-3xl md:text-5xl font-extrabold text-stone-900 mb-4 tracking-tight">Dynamic Programming</h1>
+            <p class="text-xl md:text-2xl font-light text-stone-600 mb-6">The Art of Not Doing the Same Work Twice.</p>
+            
+            <div class="bg-amber-50 border-l-4 border-amber-600 p-4 rounded-r-lg inline-block">
+                <p class="text-amber-900 font-medium"><strong>Core Philosophy:</strong> Store results, look them up next time instead of recomputing.</p>
+            </div>
+        </div>
+    </header>
+
+    <nav class="bg-white sticky top-0 z-10 shadow-sm border-b border-stone-200">
+        <div class="max-w-6xl mx-auto px-4 md:px-8 flex overflow-x-auto hide-scrollbar">
+            <button onclick="switchTab('lesson1')" id="btn-lesson1" class="nav-btn active px-6 py-4 text-stone-500 font-medium whitespace-nowrap transition-colors hover:text-stone-800 focus:outline-none">1. Memoization vs. Tabulation</button>
+            <button onclick="switchTab('lesson2')" id="btn-lesson2" class="nav-btn px-6 py-4 text-stone-500 font-medium whitespace-nowrap transition-colors hover:text-stone-800 focus:outline-none">2. Optimal Substructure</button>
+            <button onclick="switchTab('lesson3')" id="btn-lesson3" class="nav-btn px-6 py-4 text-stone-500 font-medium whitespace-nowrap transition-colors hover:text-stone-800 focus:outline-none">3. Network Routing (Real-World)</button>
+            <button onclick="switchTab('summary')" id="btn-summary" class="nav-btn px-6 py-4 text-stone-500 font-medium whitespace-nowrap transition-colors hover:text-stone-800 focus:outline-none">Course Summary</button>
+        </div>
+    </nav>
+
+    <main class="flex-grow w-full max-w-6xl mx-auto px-4 md:px-8 py-8">
+
+        <section id="lesson1" class="tab-content block">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-900 mb-3">Lesson 1: The Core Problem & Strategies</h2>
+                <p class="text-lg text-stone-700">This section explores why Dynamic Programming is necessary by comparing computation times, and introduces the two primary implementation strategies: Memoization and Tabulation. Understanding the difference between top-down caching and bottom-up building is the first step in mastering DP.</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6 mb-10">
+                <h3 class="text-xl font-bold mb-2">Why Should You Care? The Performance Difference</h3>
+                <p class="mb-6 text-stone-600">A naive recursive approach (like standard Fibonacci) takes exponential time O(2^n). With DP, this drops to linear time O(n). The chart below illustrates the massive divergence in computational steps as the input size grows.</p>
+                
+                <div class="chart-container">
+                    <canvas id="timeComplexityChart"></canvas>
+                </div>
+                <p class="text-sm text-center text-stone-500 mt-4 italic">Notice how quickly the Naive approach (Exponential) goes off the chart compared to the DP approach (Linear).</p>
+            </div>
+
+            <h3 class="text-2xl font-bold mb-6 text-center text-stone-900">Two Paths to the Same Result</h3>
+            <div class="grid md:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white rounded-xl shadow-sm border border-t-4 border-t-teal-600 border-stone-200 p-6 hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-xl font-bold text-teal-800">Memoization</h4>
+                        <span class="bg-teal-100 text-teal-800 text-xs px-2 py-1 rounded uppercase font-bold tracking-wider">Top-Down</span>
+                    </div>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-start"><span class="text-teal-600 mr-2 font-bold">&#10003;</span> Write a normal recursive function.</li>
+                        <li class="flex items-start"><span class="text-teal-600 mr-2 font-bold">&#10003;</span> Add a <strong>cache</strong> (dictionary/list) to store results.</li>
+                        <li class="flex items-start"><span class="text-teal-600 mr-2 font-bold">&#10003;</span> Check cache before computing.</li>
+                        <li class="flex items-start"><span class="text-teal-600 mr-2 font-bold">&#10003;</span> <strong>Lazy evaluation:</strong> only computes what is needed.</li>
+                    </ul>
+                    <div class="bg-stone-50 p-4 rounded border border-stone-100 text-sm">
+                        <strong>Best when:</strong> Only some subproblems are needed, or when initially writing the algorithm. Warning: Risk of stack overflow.
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-t-4 border-t-amber-600 border-stone-200 p-6 hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-xl font-bold text-amber-800">Tabulation</h4>
+                        <span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded uppercase font-bold tracking-wider">Bottom-Up</span>
+                    </div>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-start"><span class="text-amber-600 mr-2 font-bold">&#10003;</span> Start with smallest subproblems (base cases).</li>
+                        <li class="flex items-start"><span class="text-amber-600 mr-2 font-bold">&#10003;</span> Fill a <strong>table</strong> (array) iteratively, building upward.</li>
+                        <li class="flex items-start"><span class="text-amber-600 mr-2 font-bold">&#10003;</span> Each entry depends on previous entries.</li>
+                        <li class="flex items-start"><span class="text-amber-600 mr-2 font-bold">&#10003;</span> <strong>Eager evaluation:</strong> computes all subproblems in order.</li>
+                    </ul>
+                    <div class="bg-stone-50 p-4 rounded border border-stone-100 text-sm">
+                        <strong>Best when:</strong> All subproblems are needed, or deep recursion is a risk. Often faster due to memory access patterns.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="lesson2" class="tab-content hidden">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-900 mb-3">Lesson 2: Optimal Substructure</h2>
+                <p class="text-lg text-stone-700">Dynamic Programming is powerful, but it doesn't apply to every problem. This section explores the two mandatory properties required for DP to work: Overlapping Subproblems and Optimal Substructure. You will interactively test your understanding of when a problem can be broken down safely.</p>
+            </div>
+
+            <div class="bg-[#2c3e50] text-white rounded-xl p-8 mb-10 text-center shadow-lg">
+                <h3 class="text-xl font-bold mb-4 text-teal-300">The Two Golden Rules of DP</h3>
+                <div class="flex flex-col md:flex-row justify-center items-center gap-8">
+                    <div class="bg-white/10 p-6 rounded-lg w-full md:w-1/2">
+                        <div class="text-3xl font-black text-amber-400 mb-2">1</div>
+                        <h4 class="text-lg font-bold mb-2">Overlapping Subproblems</h4>
+                        <p class="text-sm text-stone-300">The same smaller problems must recur repeatedly during computation.</p>
+                    </div>
+                    <div class="text-3xl text-stone-400 font-bold">+</div>
+                    <div class="bg-white/10 p-6 rounded-lg w-full md:w-1/2">
+                        <div class="text-3xl font-black text-amber-400 mb-2">2</div>
+                        <h4 class="text-lg font-bold mb-2">Optimal Substructure</h4>
+                        <p class="text-sm text-stone-300">The globally optimal solution MUST contain the optimal solutions to its subproblems.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-bold mb-4 text-stone-900">Test Your Understanding</h3>
+            <p class="mb-6 text-stone-600">Click the scenarios below to reveal if they possess optimal substructure and whether DP can be applied.</p>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <div class="reveal-card bg-white border border-stone-200 rounded-xl p-6 relative overflow-hidden" onclick="toggleReveal('reveal-1')">
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-bold text-lg">Scenario A: Shortest Path</h4>
+                        <span class="text-xs bg-stone-100 px-2 py-1 rounded text-stone-500 uppercase tracking-wide">Click to reveal</span>
+                    </div>
+                    <p class="text-stone-600 mb-4">Finding the absolute shortest driving route from Montreal to Toronto, passing through Ottawa.</p>
+                    
+                    <div id="reveal-1" class="reveal-content mt-4 pt-4 border-t border-stone-100">
+                        <div class="flex items-center text-teal-700 font-bold mb-2 text-lg">
+                            <span class="mr-2 text-2xl">&#10003;</span> Has Optimal Substructure
+                        </div>
+                        <p class="text-sm text-stone-700">The Montreal &rarr; Ottawa segment <strong>must itself</strong> be the shortest path between those two cities. If it wasn't, you could swap it for a shorter route and improve the total trip. Subproblems combine perfectly.</p>
+                    </div>
+                </div>
+
+                <div class="reveal-card bg-white border border-stone-200 rounded-xl p-6 relative overflow-hidden" onclick="toggleReveal('reveal-2')">
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-bold text-lg">Scenario B: Longest Simple Path</h4>
+                        <span class="text-xs bg-stone-100 px-2 py-1 rounded text-stone-500 uppercase tracking-wide">Click to reveal</span>
+                    </div>
+                    <p class="text-stone-600 mb-4">Finding the longest possible route from City A to City C through City B, <em>without visiting any city twice</em>.</p>
+                    
+                    <div id="reveal-2" class="reveal-content mt-4 pt-4 border-t border-stone-100">
+                        <div class="flex items-center text-red-700 font-bold mb-2 text-lg">
+                            <span class="mr-2 text-2xl">&#10007;</span> Does NOT Have Optimal Substructure
+                        </div>
+                        <p class="text-sm text-stone-700">The longest path A &rarr; B is not necessarily part of the longest A &rarr; C path. Choosing a very long sub-path might block access to City C entirely due to the "no revisiting" rule. DP fails here.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-amber-50 p-6 rounded-xl border border-amber-200">
+                <h4 class="font-bold text-amber-900 mb-3">The 3-Question Checklist for DP</h4>
+                <ol class="list-decimal list-inside space-y-2 text-amber-800">
+                    <li>Can I break this into smaller versions of the <strong>same type</strong> of problem?</li>
+                    <li>If I solve each smaller version <strong>optimally</strong>, can I combine them into the optimal whole?</li>
+                    <li>Are subproblems <strong>independent</strong> enough that solving one doesn't ruin another?</li>
+                </ol>
+                <p class="mt-4 text-sm font-bold italic text-amber-900">If all three are "Yes", DP is a strong candidate.</p>
+            </div>
+        </section>
+
+        <section id="lesson3" class="tab-content hidden">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-900 mb-3">Lesson 3: Network Routing Optimization</h2>
+                <p class="text-lg text-stone-700">Dynamic Programming isn't just theory; it runs the internet. This section details how DP principles like Tabulation are used in networking algorithms (like Bellman-Ford) to route data packets, handle Quality of Service (QoS), and schedule cloud resources.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 mb-10">
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                    <h3 class="text-xl font-bold text-stone-900 mb-4">The Bellman-Ford Algorithm</h3>
+                    <p class="mb-4 text-sm text-stone-600">A pure <strong>DP tabulation</strong> solution to the shortest path problem, foundational to the Routing Information Protocol (RIP) standardized by the IETF.</p>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-start"><span class="bg-stone-800 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mr-3 shrink-0">1</span> <p class="text-sm">Every router maintains a <strong>cost table</strong> to destinations.</p></div>
+                        <div class="flex items-start"><span class="bg-stone-800 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mr-3 shrink-0">2</span> <p class="text-sm">Routers periodically <strong>share tables</strong> with neighbors.</p></div>
+                        <div class="flex items-start"><span class="bg-stone-800 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mr-3 shrink-0">3</span> <p class="text-sm">Router checks: "Can I reach any destination cheaper via this neighbor?"</p></div>
+                        <div class="flex items-start"><span class="bg-stone-800 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mr-3 shrink-0">4</span> <p class="text-sm">If yes &rarr; <strong>update the table</strong>.</p></div>
+                        <div class="flex items-start"><span class="bg-stone-800 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mr-3 shrink-0">5</span> <p class="text-sm">Repeat until tables <strong>stabilize</strong> (no more improvements).</p></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                    <h3 class="text-xl font-bold text-stone-900 mb-4">Resource Scheduling (Knapsack)</h3>
+                    <p class="mb-4 text-sm text-stone-600">Cloud providers assign jobs to servers using variants of the DP Knapsack Problem to maximize efficiency.</p>
+                    
+                    <ul class="space-y-4 mb-4">
+                        <li class="bg-stone-50 p-3 rounded border border-stone-100">
+                            <strong>CDN Caching</strong><br>
+                            <span class="text-sm text-stone-500">Deciding which content to keep at edge servers (Cloudflare, Akamai).</span>
+                        </li>
+                        <li class="bg-stone-50 p-3 rounded border border-stone-100">
+                            <strong>Data Center Scheduling</strong><br>
+                            <span class="text-sm text-stone-500">Packing containers onto Kubernetes servers efficiently.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6 mb-8">
+                <h3 class="text-xl font-bold mb-2">QoS (Quality of Service) Routing</h3>
+                <p class="mb-6 text-stone-600 text-sm">Standard routing minimizes one metric. QoS routing uses DP to satisfy <strong>multiple constraints</strong> simultaneously (e.g., shortest path that ALSO has a minimum bandwidth). The chart below shows relative sensitivity to network metrics by traffic type.</p>
+                
+                <div class="chart-container">
+                    <canvas id="qosChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="summary" class="tab-content hidden">
+            <div class="text-center max-w-3xl mx-auto mb-10">
+                <h2 class="text-3xl font-extrabold text-stone-900 mb-4">The One-Sentence Takeaway</h2>
+                <div class="text-2xl font-light italic text-teal-800 leading-snug">
+                    "Dynamic Programming is the art of being lazy in a clever way &mdash; never solve the same problem twice, and build big answers from small answers you have already figured out."
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden mb-10">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-stone-100 text-stone-700 text-sm uppercase tracking-wider">
+                            <th class="p-4 border-b border-stone-200">Lesson</th>
+                            <th class="p-4 border-b border-stone-200">Core Concept</th>
+                            <th class="p-4 border-b border-stone-200">Key Idea</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-stone-800">
+                        <tr class="hover:bg-stone-50 transition-colors">
+                            <td class="p-4 border-b border-stone-100 font-bold">1: Memoization vs. Tabulation</td>
+                            <td class="p-4 border-b border-stone-100">Two DP strategies</td>
+                            <td class="p-4 border-b border-stone-100 text-stone-600">Cache results &mdash; never recompute</td>
+                        </tr>
+                        <tr class="hover:bg-stone-50 transition-colors">
+                            <td class="p-4 border-b border-stone-100 font-bold">2: Optimal Substructure</td>
+                            <td class="p-4 border-b border-stone-100">When DP works</td>
+                            <td class="p-4 border-b border-stone-100 text-stone-600">Optimal whole = optimal parts</td>
+                        </tr>
+                        <tr class="hover:bg-stone-50 transition-colors">
+                            <td class="p-4 border-b border-stone-100 font-bold">3: Network Routing</td>
+                            <td class="p-4 border-b border-stone-100">Real-world DP</td>
+                            <td class="p-4 border-b border-stone-100 text-stone-600">Bellman-Ford, QoS, Knapsack</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <h4 class="font-bold text-lg mb-4 text-stone-900">Recommended Resources</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><span class="text-amber-600 mr-2">&#9654;</span> freeCodeCamp DP Course</li>
+                        <li><span class="text-amber-600 mr-2">&#9654;</span> MIT OCW Optimal Substructure</li>
+                        <li><span class="text-amber-600 mr-2">&#9654;</span> Abdul Bari Bellman-Ford</li>
+                        <li class="text-stone-500 italic mt-2 text-xs">Always verify external links at virustotal.com before clicking.</li>
+                    </ul>
+                </div>
+                <div class="bg-stone-100 p-4 rounded text-xs text-stone-500">
+                    <p class="font-bold mb-2">Everyday Software Using DP:</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="bg-white px-2 py-1 rounded border border-stone-200">GPS Route Finding</span>
+                        <span class="bg-white px-2 py-1 rounded border border-stone-200">Netflix Recommendations</span>
+                        <span class="bg-white px-2 py-1 rounded border border-stone-200">Video Game Pathfinding</span>
+                        <span class="bg-white px-2 py-1 rounded border border-stone-200">DNA Sequence Alignment</span>
+                        <span class="bg-white px-2 py-1 rounded border border-stone-200">Git Text Diff Tools</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-900 text-stone-400 py-8 text-center text-xs mt-auto">
+        <div class="max-w-6xl mx-auto px-4">
+            <p class="font-bold text-stone-300 text-base mb-2">Cyber.SoHo Educational Hub</p>
+            <p class="italic mb-4">"From the Industry to the Classroom &mdash; Building the IT's Future, Today and Together!"</p>
+            <div class="space-y-1">
+                <p>&copy; 2026 Cyber.SoHo Educational Hub &mdash; All Rights Reserved</p>
+                <p>No affiliation with any mentioned organizations. Provided "as is" for educational purposes only.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // State Management
+        const appState = {
+            currentTab: 'lesson1',
+            chartsInitialized: {
+                timeComplexity: false,
+                qos: false
+            }
+        };
+
+        // Navigation Logic
+        function switchTab(tabId) {
+            // Update buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById('btn-' + tabId).classList.add('active');
+
+            // Update content sections
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+
+            appState.currentTab = tabId;
+
+            // Lazy load charts based on active tab
+            if (tabId === 'lesson1' && !appState.chartsInitialized.timeComplexity) {
+                initTimeComplexityChart();
+                appState.chartsInitialized.timeComplexity = true;
+            } else if (tabId === 'lesson3' && !appState.chartsInitialized.qos) {
+                initQosChart();
+                appState.chartsInitialized.qos = true;
+            }
+        }
+
+        // Interactive Card Logic
+        function toggleReveal(id) {
+            const el = document.getElementById(id);
+            if (el.style.display === 'block') {
+                el.style.display = 'none';
+            } else {
+                el.style.display = 'block';
+            }
+        }
+
+        // Chart 1: Time Complexity (O(2^n) vs O(n))
+        function initTimeComplexityChart() {
+            const ctx = document.getElementById('timeComplexityChart').getContext('2d');
+            
+            // Generate data points
+            const labels = [];
+            const linearData = [];
+            const exponentialData = [];
+            
+            for (let n = 1; n <= 10; n++) {
+                labels.push('n=' + n);
+                linearData.push(n); // O(n)
+                exponentialData.push(Math.pow(2, n)); // O(2^n)
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'DP Tabulation - O(n)',
+                            data: linearData,
+                            borderColor: '#0f766e', // teal-700
+                            backgroundColor: 'rgba(15, 118, 110, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Naive Recursion - O(2ⁿ)',
+                            data: exponentialData,
+                            borderColor: '#b45309', // amber-700
+                            backgroundColor: 'rgba(180, 83, 9, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + ' operations';
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Computation Steps (Operations)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Input Size (n)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chart 2: QoS Traffic Requirements
+        function initQosChart() {
+            const ctx = document.getElementById('qosChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Low Latency Need', 'Bandwidth Need', 'Reliability Need', 'Jitter Sensitivity'],
+                    datasets: [
+                        {
+                            label: 'Video Call',
+                            data: [9, 7, 6, 9],
+                            borderColor: '#0f766e', // teal
+                            backgroundColor: 'rgba(15, 118, 110, 0.2)',
+                            pointBackgroundColor: '#0f766e'
+                        },
+                        {
+                            label: 'File Download',
+                            data: [2, 10, 10, 2],
+                            borderColor: '#b45309', // amber
+                            backgroundColor: 'rgba(180, 83, 9, 0.2)',
+                            pointBackgroundColor: '#b45309'
+                        },
+                        {
+                            label: 'Online Game',
+                            data: [10, 3, 7, 8],
+                            borderColor: '#334155', // slate
+                            backgroundColor: 'rgba(51, 65, 85, 0.2)',
+                            pointBackgroundColor: '#334155'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.r + '/10';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: { display: true },
+                            suggestedMin: 0,
+                            suggestedMax: 10,
+                            ticks: { stepSize: 2 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initTimeComplexityChart();
+            appState.chartsInitialized.timeComplexity = true;
+        });
+
+    </script>
+</body>
+</html>
+
+
+
