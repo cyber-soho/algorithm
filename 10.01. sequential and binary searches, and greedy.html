@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber.SoHo Hub | Search & Greedy Algorithms</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #fafaf9; 
+            color: #292524;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow-x: hidden;
+        }
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+            opacity: 1;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        .nav-btn.active {
+            background-color: #292524;
+            color: #fafaf9;
+            font-weight: 600;
+        }
+        .coin {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 9999px;
+            background-color: #e7e5e4;
+            font-weight: bold;
+            color: #44403c;
+            border: 2px solid #d6d3d1;
+            margin: 0.25rem;
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        }
+        .coin-25 { background-color: #fef08a; border-color: #facc15; }
+        .coin-10 { background-color: #e2e8f0; border-color: #cbd5e1; }
+        .coin-5 { background-color: #fed7aa; border-color: #fb923c; }
+        .coin-1 { background-color: #fecdd3; border-color: #fda4af; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-stone-300">
+
+<!-- Chosen Palette: Warm Neutrals (Stone/Amber/Emerald/Indigo) -->
+<!-- Application Structure Plan: A tabbed single-page application prioritizing non-linear exploration. Content is divided into Core Concepts (Overview), deep dives into individual algorithms (Sequential, Binary, Greedy), and a final Synthesis (Comparison). This prevents information overload and allows students to focus on one algorithm paradigm at a time while providing interactive sandboxes to reinforce learning without scrolling fatigue. -->
+<!-- Visualization & Content Choices: Binary vs Sequential Power -> Goal: Compare efficiency -> Line Chart with Logarithmic Scale (Chart.js) -> Hover for exact steps -> Shows the massive scale difference clearly without SVGs. Coin Change -> Goal: Inform/Demonstrate -> Interactive HTML UI -> Enter amount to see greedy logic in real-time -> Reinforces the "locally optimal" concept. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <header class="bg-white border-b border-stone-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col md:flex-row md:justify-between md:align-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-stone-800">Algorithms: Searches & Strategies</h1>
+                    <p class="text-sm text-stone-500 font-medium">Cyber.SoHo Educational Hub • Week 10 Module 08</p>
+                </div>
+                <nav class="flex overflow-x-auto space-x-2 pb-2 md:pb-0 scrollbar-hide">
+                    <button onclick="switchTab('overview')" id="btn-overview" class="nav-btn active px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap bg-stone-100 text-stone-600 hover:bg-stone-200">Overview</button>
+                    <button onclick="switchTab('sequential')" id="btn-sequential" class="nav-btn px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap bg-stone-100 text-stone-600 hover:bg-stone-200">Sequential Search</button>
+                    <button onclick="switchTab('binary')" id="btn-binary" class="nav-btn px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap bg-stone-100 text-stone-600 hover:bg-stone-200">Binary Search</button>
+                    <button onclick="switchTab('greedy')" id="btn-greedy" class="nav-btn px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap bg-stone-100 text-stone-600 hover:bg-stone-200">Greedy Strategy</button>
+                    <button onclick="switchTab('compare')" id="btn-compare" class="nav-btn px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap bg-stone-100 text-stone-600 hover:bg-stone-200">Synthesis</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+        <section id="overview" class="tab-content active space-y-8">
+            <div class="bg-white rounded-2xl p-6 sm:p-10 shadow-sm border border-stone-200">
+                <h2 class="text-3xl font-bold text-stone-800 mb-4">Welcome to Module 08</h2>
+                <p class="text-lg text-stone-600 leading-relaxed mb-6">
+                    Searching is a foundational skill in Computer Science. Every application you use relies on efficient lookup strategies to process data. In this interactive module, you will explore the mechanisms, efficiencies, and trade-offs of the most common search algorithms and decision-making strategies.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                    <div class="bg-amber-50 rounded-xl p-6 border border-amber-100 cursor-pointer hover:shadow-md transition" onclick="switchTab('sequential')">
+                        <div class="text-3xl mb-3">🚶‍♂️</div>
+                        <h3 class="font-semibold text-amber-900 mb-2">Sequential Search</h3>
+                        <p class="text-amber-700 text-sm">The "check every item" approach. Simple, but slow for large datasets.</p>
+                    </div>
+                    <div class="bg-emerald-50 rounded-xl p-6 border border-emerald-100 cursor-pointer hover:shadow-md transition" onclick="switchTab('binary')">
+                        <div class="text-3xl mb-3">⚡</div>
+                        <h3 class="font-semibold text-emerald-900 mb-2">Binary Search</h3>
+                        <p class="text-emerald-700 text-sm">The "divide and conquer" approach. Blazing fast, but requires sorted data.</p>
+                    </div>
+                    <div class="bg-indigo-50 rounded-xl p-6 border border-indigo-100 cursor-pointer hover:shadow-md transition" onclick="switchTab('greedy')">
+                        <div class="text-3xl mb-3">🎯</div>
+                        <h3 class="font-semibold text-indigo-900 mb-2">Greedy Strategy</h3>
+                        <p class="text-indigo-700 text-sm">The "best choice right now" approach. Quick decisions that aren't always perfect.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-stone-800 rounded-2xl p-6 sm:p-10 shadow-lg text-white">
+                <h3 class="text-2xl font-bold mb-4 flex items-center">🍕 The Restaurant Analogy</h3>
+                <p class="text-stone-300 mb-6">How do you find a place to eat? Your strategy changes everything.</p>
+                <div class="space-y-4">
+                    <div class="flex items-start gap-4">
+                        <div class="bg-stone-700 text-amber-400 p-2 rounded-lg font-bold">1</div>
+                        <div>
+                            <h4 class="font-bold text-lg text-amber-300">Sequential Search</h4>
+                            <p class="text-stone-400">Read every restaurant on the city list, from top to bottom.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="bg-stone-700 text-emerald-400 p-2 rounded-lg font-bold">2</div>
+                        <div>
+                            <h4 class="font-bold text-lg text-emerald-300">Binary Search</h4>
+                            <p class="text-stone-400">Open a sorted directory, jump to the middle, narrow down by halves.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="bg-stone-700 text-indigo-400 p-2 rounded-lg font-bold">3</div>
+                        <div>
+                            <h4 class="font-bold text-lg text-indigo-300">Greedy Strategy</h4>
+                            <p class="text-stone-400">Walk down the street, pick whichever restaurant LOOKS best at each corner.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="sequential" class="tab-content space-y-8">
+            <div class="bg-white rounded-2xl p-6 sm:p-10 shadow-sm border border-stone-200">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="text-4xl">🚶‍♂️</span>
+                    <h2 class="text-3xl font-bold text-stone-800">Sequential (Linear) Search</h2>
+                </div>
+                <p class="text-lg text-stone-600 mb-8 border-l-4 border-amber-400 pl-4 py-1 bg-amber-50/50">
+                    The simplest searching algorithm in Computer Science. It starts at the first item and checks each one in order until the target is found or the list ends. 
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-bold text-stone-800 mb-4">How It Works</h3>
+                        <ol class="space-y-3 list-decimal list-inside text-stone-600 bg-stone-50 p-6 rounded-xl border border-stone-100">
+                            <li>Start at index 0 (the first element)</li>
+                            <li>Compare current element to the target</li>
+                            <li><strong>Match found?</strong> &rarr; Return the index. Done!</li>
+                            <li><strong>No match?</strong> &rarr; Move to the next element</li>
+                            <li><strong>End of list reached?</strong> &rarr; Target is not present. Return -1</li>
+                        </ol>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-stone-800 mb-4">When to Use</h3>
+                        <div class="space-y-4">
+                            <div class="bg-green-50 p-4 rounded-xl border border-green-100">
+                                <strong class="text-green-800 block mb-1">👍 Best For:</strong>
+                                <ul class="list-disc list-inside text-green-700 text-sm space-y-1">
+                                    <li>Small datasets (under ~100 items)</li>
+                                    <li>Unsorted or unordered data</li>
+                                    <li>One-time searches (not worth sorting first)</li>
+                                    <li>Linked lists (no random access available)</li>
+                                </ul>
+                            </div>
+                            <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                                <strong class="text-red-800 block mb-1">👎 Avoid When:</strong>
+                                <ul class="list-disc list-inside text-red-700 text-sm space-y-1">
+                                    <li>Large sorted datasets</li>
+                                    <li>Repeated searches on same data</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 text-center">
+                    <p class="text-sm font-bold text-stone-400 uppercase tracking-wider mb-1">Best Case</p>
+                    <p class="text-3xl font-black text-amber-600 font-mono mb-2">O(1)</p>
+                    <p class="text-sm text-stone-500">Target is the very first item.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 text-center">
+                    <p class="text-sm font-bold text-stone-400 uppercase tracking-wider mb-1">Average Case</p>
+                    <p class="text-3xl font-black text-amber-600 font-mono mb-2">O(n)</p>
+                    <p class="text-sm text-stone-500">Check about half the items.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 text-center ring-2 ring-amber-100">
+                    <p class="text-sm font-bold text-stone-400 uppercase tracking-wider mb-1">Worst Case</p>
+                    <p class="text-3xl font-black text-amber-600 font-mono mb-2">O(n)</p>
+                    <p class="text-sm text-stone-500">Target is last or totally absent.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="binary" class="tab-content space-y-8">
+            <div class="bg-white rounded-2xl p-6 sm:p-10 shadow-sm border border-stone-200">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="text-4xl">⚡</span>
+                    <h2 class="text-3xl font-bold text-stone-800">Binary Search</h2>
+                </div>
+                <p class="text-lg text-stone-600 mb-8 border-l-4 border-emerald-400 pl-4 py-1 bg-emerald-50/50">
+                    A "divide and conquer" algorithm that repeatedly divides the search space in half. It is dramatically faster than Sequential Search but has one strict rule: <strong>The data MUST be sorted.</strong>
+                </p>
+
+                <div class="bg-stone-50 p-6 rounded-xl border border-stone-100 mb-8">
+                    <h3 class="text-lg font-bold text-stone-800 mb-4">The Logic Steps</h3>
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex-1 bg-white p-4 rounded-lg shadow-sm border border-stone-100">
+                            <span class="bg-stone-200 text-stone-600 rounded px-2 py-1 text-xs font-bold mb-2 inline-block">Step 1</span>
+                            <p class="text-sm text-stone-700">Set <strong>low</strong> to first index and <strong>high</strong> to last index.</p>
+                        </div>
+                        <div class="flex-1 bg-white p-4 rounded-lg shadow-sm border border-stone-100">
+                            <span class="bg-stone-200 text-stone-600 rounded px-2 py-1 text-xs font-bold mb-2 inline-block">Step 2</span>
+                            <p class="text-sm text-stone-700">Calculate middle: <br><code>mid = (low + high) / 2</code></p>
+                        </div>
+                        <div class="flex-1 bg-white p-4 rounded-lg shadow-sm border border-emerald-200 ring-1 ring-emerald-50">
+                            <span class="bg-emerald-100 text-emerald-700 rounded px-2 py-1 text-xs font-bold mb-2 inline-block">Step 3 (Compare)</span>
+                            <ul class="text-sm text-stone-700 space-y-1 list-disc list-inside">
+                                <li><strong>Equal?</strong> Found it!</li>
+                                <li><strong>Mid > Target?</strong> Search LEFT half.</li>
+                                <li><strong>Mid < Target?</strong> Search RIGHT half.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="text-2xl font-bold text-stone-800 mb-2">The Power of Halving</h3>
+                <p class="text-stone-600 mb-6">Compare the maximum number of steps required to guarantee a result based on the dataset size.</p>
+                
+                <div class="bg-white p-4 rounded-xl border border-stone-200">
+                    <div class="chart-container">
+                        <canvas id="halvingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-stone-800 text-white rounded-2xl p-8 shadow-sm">
+                    <h3 class="text-xl font-bold mb-4">Performance Metrics</h3>
+                    <ul class="space-y-4">
+                        <li class="flex justify-between border-b border-stone-700 pb-2">
+                            <span class="text-stone-400">Best Case Time</span>
+                            <span class="font-mono text-emerald-400 font-bold">O(1)</span>
+                        </li>
+                        <li class="flex justify-between border-b border-stone-700 pb-2">
+                            <span class="text-stone-400">Average Case Time</span>
+                            <span class="font-mono text-emerald-400 font-bold">O(log n)</span>
+                        </li>
+                        <li class="flex justify-between border-b border-stone-700 pb-2">
+                            <span class="text-stone-400">Worst Case Time</span>
+                            <span class="font-mono text-emerald-400 font-bold">O(log n)</span>
+                        </li>
+                        <li class="flex justify-between pt-2">
+                            <span class="text-stone-400">Space Complexity</span>
+                            <span class="font-mono text-emerald-400 font-bold">O(1) <span class="text-xs font-sans font-normal text-stone-500">(Iterative)</span></span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="bg-white rounded-2xl p-8 shadow-sm border border-stone-200">
+                    <h3 class="text-xl font-bold text-stone-800 mb-4">The Crucial Tradeoff</h3>
+                    <p class="text-stone-600 mb-4">Binary search requires <strong>random access</strong> (like arrays, not linked lists) and data <strong>MUST be pre-sorted</strong>.</p>
+                    <div class="bg-stone-100 p-4 rounded-lg">
+                        <p class="text-sm text-stone-700 font-medium">Sorting costs time (usually <code class="bg-white px-1 py-0.5 rounded text-indigo-600">O(n log n)</code>). It is only worth paying this cost if you intend to search the same dataset multiple times.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="greedy" class="tab-content space-y-8">
+            <div class="bg-white rounded-2xl p-6 sm:p-10 shadow-sm border border-stone-200">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="text-4xl">🎯</span>
+                    <h2 class="text-3xl font-bold text-stone-800">Greedy Algorithm Strategy</h2>
+                </div>
+                <p class="text-lg text-stone-600 mb-6 border-l-4 border-indigo-400 pl-4 py-1 bg-indigo-50/50">
+                    Not a specific algorithm, but a <em>problem-solving strategy</em>. At each step, you make the locally optimal choice hoping it leads to a globally optimal solution. Once a choice is made, it's final. No backtracking.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                    <div class="bg-stone-50 p-6 rounded-xl border border-stone-100">
+                        <h3 class="font-bold text-indigo-900 mb-3 border-b border-stone-200 pb-2">1. Greedy Choice Property</h3>
+                        <p class="text-sm text-stone-600">Making the locally best choice at each step leads to the globally best solution. You never need to "undo" a decision.</p>
+                    </div>
+                    <div class="bg-stone-50 p-6 rounded-xl border border-stone-100">
+                        <h3 class="font-bold text-indigo-900 mb-3 border-b border-stone-200 pb-2">2. Optimal Substructure</h3>
+                        <p class="text-sm text-stone-600">The best overall solution contains the best solutions to its sub-problems.</p>
+                    </div>
+                </div>
+
+                <h3 class="text-2xl font-bold text-stone-800 mb-4">Interactive Demo: The Coin Change Problem</h3>
+                <p class="text-stone-600 mb-6">Enter an amount to see how a Greedy Algorithm attempts to make change using the fewest coins by always picking the <strong>largest coin that fits</strong>.</p>
+                
+                <div class="bg-indigo-50/30 rounded-xl p-6 border border-indigo-100">
+                    <div class="flex flex-col md:flex-row gap-8">
+                        
+                        <div class="w-full md:w-1/3 space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold text-stone-700 mb-1">Target Amount (¢)</label>
+                                <input type="number" id="coinAmount" value="36" min="1" max="99" class="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-stone-700 mb-1">Coin System</label>
+                                <select id="coinSystem" class="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                                    <option value="standard">Standard US (25, 10, 5, 1)</option>
+                                    <option value="trap">The Trap System (4, 3, 1)</option>
+                                </select>
+                            </div>
+                            <button onclick="calculateGreedyCoins()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition">Run Greedy Logic</button>
+                        </div>
+                        
+                        <div class="w-full md:w-2/3 bg-white rounded-lg p-6 shadow-inner border border-stone-200 min-h-[200px]">
+                            <h4 class="text-sm font-bold text-stone-400 uppercase tracking-wider mb-4" id="simResultTitle">Result</h4>
+                            <div id="coinResultDisplay" class="flex flex-wrap gap-2 mb-4">
+                                <span class="text-stone-400 italic">Enter an amount and run to see result.</span>
+                            </div>
+                            <div id="coinExplanation" class="text-sm text-stone-600 bg-stone-50 p-3 rounded-lg mt-auto"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
+                <h3 class="text-xl font-bold text-stone-800 mb-4">Famous Applications of Greedy</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="p-4 bg-stone-50 rounded-xl border border-stone-100">
+                        <strong class="text-stone-800 block">Dijkstra's</strong>
+                        <span class="text-xs text-stone-500 uppercase tracking-wide">Shortest Path</span>
+                        <p class="text-sm text-stone-600 mt-2">Closest unvisited node is always safe.</p>
+                    </div>
+                    <div class="p-4 bg-stone-50 rounded-xl border border-stone-100">
+                        <strong class="text-stone-800 block">Kruskal's</strong>
+                        <span class="text-xs text-stone-500 uppercase tracking-wide">Min Spanning Tree</span>
+                        <p class="text-sm text-stone-600 mt-2">Cheapest edge that doesn't cycle.</p>
+                    </div>
+                    <div class="p-4 bg-stone-50 rounded-xl border border-stone-100">
+                        <strong class="text-stone-800 block">Huffman Coding</strong>
+                        <span class="text-xs text-stone-500 uppercase tracking-wide">Data Compression</span>
+                        <p class="text-sm text-stone-600 mt-2">Most frequent chars get shortest codes.</p>
+                    </div>
+                    <div class="p-4 bg-stone-50 rounded-xl border border-stone-100">
+                        <strong class="text-stone-800 block">Activity Selection</strong>
+                        <span class="text-xs text-stone-500 uppercase tracking-wide">Time Management</span>
+                        <p class="text-sm text-stone-600 mt-2">Earliest-ending leaves most room.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="compare" class="tab-content space-y-8">
+            <div class="bg-white rounded-2xl p-6 sm:p-10 shadow-sm border border-stone-200">
+                <h2 class="text-3xl font-bold text-stone-800 mb-4">Grand Comparison</h2>
+                <p class="text-lg text-stone-600 mb-8">
+                    When choosing an algorithm or design strategy, context is everything. Use this reference to determine which approach fits your problem domain.
+                </p>
+
+                <div class="overflow-x-auto rounded-xl border border-stone-200">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-stone-100 text-stone-700 text-sm uppercase tracking-wider">
+                                <th class="p-4 font-bold border-b border-stone-200">Feature</th>
+                                <th class="p-4 font-bold border-b border-stone-200 text-amber-800">Sequential Search</th>
+                                <th class="p-4 font-bold border-b border-stone-200 text-emerald-800">Binary Search</th>
+                                <th class="p-4 font-bold border-b border-stone-200 text-indigo-800">Greedy Algorithm</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-stone-700 divide-y divide-stone-200">
+                            <tr class="hover:bg-stone-50 transition">
+                                <td class="p-4 font-bold text-stone-800">Type</td>
+                                <td class="p-4">Search Algorithm</td>
+                                <td class="p-4">Search Algorithm</td>
+                                <td class="p-4">Design Strategy</td>
+                            </tr>
+                            <tr class="hover:bg-stone-50 transition">
+                                <td class="p-4 font-bold text-stone-800">Requires Sorting?</td>
+                                <td class="p-4 bg-green-50/50">No</td>
+                                <td class="p-4 font-bold text-red-600 bg-red-50/50">Yes</td>
+                                <td class="p-4">Sometimes</td>
+                            </tr>
+                            <tr class="hover:bg-stone-50 transition">
+                                <td class="p-4 font-bold text-stone-800">Worst Case Big-O</td>
+                                <td class="p-4 font-mono text-amber-600 font-bold">O(n)</td>
+                                <td class="p-4 font-mono text-emerald-600 font-bold">O(log n)</td>
+                                <td class="p-4 font-mono text-indigo-600 font-bold">O(n) or O(n log n)</td>
+                            </tr>
+                            <tr class="hover:bg-stone-50 transition">
+                                <td class="p-4 font-bold text-stone-800">Always Optimal?</td>
+                                <td class="p-4">Yes (Finds target)</td>
+                                <td class="p-4">Yes (Finds target)</td>
+                                <td class="p-4 font-bold text-amber-600">Not always</td>
+                            </tr>
+                            <tr class="hover:bg-stone-50 transition">
+                                <td class="p-4 font-bold text-stone-800">Greatest Strength</td>
+                                <td class="p-4">Works on raw, unordered data</td>
+                                <td class="p-4">Exponentially faster on large data</td>
+                                <td class="p-4">Blazing fast decision making</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="bg-stone-100 border border-stone-200 rounded-2xl p-8 text-center">
+                <h3 class="text-xl font-bold text-stone-800 mb-2">Key Takeaway</h3>
+                <p class="text-stone-600 max-w-2xl mx-auto">
+                    <strong>Sequential</strong> is simple and flexible. <strong>Binary</strong> is strict but wildly efficient. <strong>Greedy</strong> makes fast local decisions but requires mathematical proof to guarantee global success.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-900 text-stone-400 py-8 text-sm mt-8 border-t border-stone-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2">
+            <p>&copy; 2026 Cyber.SoHo Educational Hub — All rights reserved.</p>
+            <p class="text-xs text-stone-500 max-w-2xl mx-auto">Material provided "as-is" for educational purposes only. Not affiliated with referenced organizations. Verify external links before visiting.</p>
+        </div>
+    </footer>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('active', 'bg-stone-200', 'font-bold');
+                el.classList.add('bg-stone-100', 'font-normal');
+            });
+
+            document.getElementById(tabId).classList.add('active');
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.add('active');
+            activeBtn.classList.remove('bg-stone-100', 'font-normal');
+            
+            if(tabId === 'binary' && !window.chartRendered) {
+                renderChart();
+                window.chartRendered = true;
+            }
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('halvingChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['10 Items', '100 Items', '1,000 Items', '1,000,000 Items'],
+                    datasets: [
+                        {
+                            label: 'Sequential Search (Max Steps)',
+                            data: [10, 100, 1000, 1000000],
+                            backgroundColor: 'rgba(217, 119, 6, 0.7)',
+                            borderColor: 'rgb(217, 119, 6)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Binary Search (Max Steps)',
+                            data: [4, 7, 10, 20],
+                            backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                            borderColor: 'rgb(16, 185, 129)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' steps';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'logarithmic',
+                            title: { display: true, text: 'Maximum Steps Required (Log Scale)' },
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    if (value === 10 || value === 100 || value === 1000 || value === 10000 || value === 100000 || value === 1000000) {
+                                        return value.toLocaleString();
+                                    }
+                                    return null;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function calculateGreedyCoins() {
+            const amountInput = parseInt(document.getElementById('coinAmount').value);
+            const system = document.getElementById('coinSystem').value;
+            const display = document.getElementById('coinResultDisplay');
+            const explanation = document.getElementById('coinExplanation');
+            
+            if (isNaN(amountInput) || amountInput <= 0) {
+                display.innerHTML = '<span class="text-red-500 font-bold">Please enter a valid positive number.</span>';
+                explanation.innerHTML = '';
+                return;
+            }
+
+            let coinsAvailable = system === 'standard' ? [25, 10, 5, 1] : [4, 3, 1];
+            let remaining = amountInput;
+            let resultCoins = [];
+
+            for (let i = 0; i < coinsAvailable.length; i++) {
+                let currentCoin = coinsAvailable[i];
+                while (remaining >= currentCoin) {
+                    resultCoins.push(currentCoin);
+                    remaining -= currentCoin;
+                }
+            }
+
+            display.innerHTML = '';
+            resultCoins.forEach(val => {
+                let span = document.createElement('span');
+                span.className = `coin coin-${val}`;
+                if(![25, 10, 5, 1].includes(val)) span.className = 'coin bg-indigo-100 border-indigo-300';
+                span.textContent = val + '¢';
+                display.appendChild(span);
+            });
+
+            let analysisHTML = `<strong>Analysis:</strong> Greedy algorithm selected <strong>${resultCoins.length} coins</strong>. `;
+            
+            if (system === 'trap' && amountInput === 6) {
+                analysisHTML += `<br><span class="text-red-600 font-bold">⚠️ Greedy Failed!</span> It picked [4, 1, 1] (3 coins). The globally optimal answer is [3, 3] (2 coins). The locally optimal choice (4) blocked the best solution.`;
+            } else if (system === 'standard') {
+                analysisHTML += `<span class="text-emerald-600 font-bold">Optimal!</span> Standard US coins guarantee an optimal answer with greedy logic.`;
+            } else {
+                analysisHTML += `Locally optimal choices made at every step.`;
+            }
+            
+            explanation.innerHTML = analysisHTML;
+        }
+
+        window.onload = function() {
+            setTimeout(calculateGreedyCoins, 500);
+        };
+    </script>
+</body>
+</html>
+
+
+

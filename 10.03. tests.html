@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Study Canvas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+        };
+    </script>
+    <style>
+        /* Card Flip CSS */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .flip-card-inner { transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); }
+        .flipped .flip-card-inner { transform: rotateY(180deg); }
+        
+        body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 min-h-screen">
+
+    <header class="bg-white border-b border-stone-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h1 class="text-2xl font-bold text-stone-800">Algorithm Study Canvas</h1>
+            <div class="flex space-x-2 bg-stone-100 p-1 rounded-lg">
+                <button id="tab-flashcards" onclick="switchTab('flashcards')" class="px-6 py-2 rounded-md text-sm font-bold bg-white text-indigo-600 shadow-sm transition-all">Flashcards</button>
+                <button id="tab-quiz" onclick="switchTab('quiz')" class="px-6 py-2 rounded-md text-sm font-medium text-stone-500 hover:text-stone-700 transition-all">Quiz</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        
+        <section id="section-flashcards" class="block">
+            <div class="mb-8 text-center">
+                <h2 class="text-3xl font-bold text-stone-800 mb-2">Concept Flashcards</h2>
+                <p class="text-stone-500">Click on any card to reveal the answer. Review these before taking the quiz.</p>
+            </div>
+            <div id="flashcard-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                </div>
+        </section>
+
+        <section id="section-quiz" class="hidden">
+            <div class="mb-8 text-center max-w-2xl mx-auto">
+                <h2 class="text-3xl font-bold text-stone-800 mb-2">Knowledge Check</h2>
+                <p class="text-stone-500">Test your practical understanding of search algorithms and greedy strategies. Select an answer and click "Check Answer" to see the rationale.</p>
+            </div>
+            <div id="quiz-container" class="max-w-3xl mx-auto space-y-8">
+                </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- DATA ---
+        const flashcardsData = [
+            { front: "Sequential Search (Linear Search)", back: "A search algorithm that checks every item one by one, from start to finish, until the target is found or the end is reached." },
+            { front: "Best-case time complexity of Sequential Search", back: "$O(1)$" },
+            { front: "Worst-case time complexity of Sequential Search", back: "$O(n)$" },
+            { front: "Space complexity of Sequential Search", back: "$O(1)$" },
+            { front: "Ideal use cases for Sequential Search", back: "Small datasets, unsorted or unordered data, one-time searches, and linked lists." },
+            { front: "Binary Search", back: "A divide-and-conquer search algorithm that repeatedly divides the search space in half to find a target." },
+            { front: "Primary prerequisite for using Binary Search", back: "The dataset must be sorted." },
+            { front: "Best-case time complexity of Binary Search", back: "$O(1)$" },
+            { front: "Worst-case and average time complexity of Binary Search", back: "$O(\\log n)$" },
+            { front: "Space complexity of Binary Search", back: "$O(1)$ for iterative implementations, and $O(\\log n)$ for recursive implementations." },
+            { front: "Next step in Binary Search if the middle element is greater than the target", back: "Search the left half by setting the high index to the middle index minus one." },
+            { front: "Next step in Binary Search if the middle element is less than the target", back: "Search the right half by setting the low index to the middle index plus one." },
+            { front: "Greedy Algorithm Strategy", back: "A problem-solving strategy that makes the locally optimal choice at each step with the hope that it leads to a globally optimal solution." },
+            { front: "Greedy Choice Property", back: "The characteristic where making the locally best choice at each step leads to the globally best solution without ever needing to undo a decision." },
+            { front: "Optimal Substructure", back: "The characteristic where the best overall solution to a problem contains the best solutions to its sub-problems." },
+            { front: "Greedy approach to the Coin Change Problem", back: "Always pick the largest denomination coin that fits into the remaining amount." },
+            { front: "Primary reason Greedy Algorithms fail", back: "When a locally best choice blocks the globally best solution from being reached." },
+            { front: "Alternative strategy when Greedy Algorithms fail on optimization problems", back: "Dynamic Programming (DP)." },
+            { front: "Dijkstra's Algorithm application", back: "Finding the shortest path in graphs by always safely choosing the closest unvisited node." },
+            { front: "Kruskal's Algorithm application", back: "Finding a minimum spanning tree by always picking the cheapest edge that doesn't create a cycle." },
+            { front: "Huffman Coding application", back: "Data compression by greedily assigning the shortest codes to the most frequent characters." },
+            { front: "Activity Selection Strategy", back: "Maximizing non-overlapping activities by always picking the activity that ends the earliest." },
+            { front: "Restaurant analogy for Sequential Search", back: "Reading every restaurant on the city list, from top to bottom." },
+            { front: "Restaurant analogy for Binary Search", back: "Opening a sorted directory, jumping to the middle, and narrowing down the options by halves." },
+            { front: "Restaurant analogy for Greedy Strategy", back: "Walking down the street and picking whichever restaurant looks best at each corner." }
+        ];
+
+        const quizData = [
+            {
+                q: "A developer needs to search a massive database of 10 million user records repeatedly for fast lookups and decides to use Binary Search. What condition must be met before they can apply this algorithm?",
+                hint: "This algorithm requires a guarantee about the arrangement of the data so it knows which half to discard safely.",
+                options: [
+                    { text: "The data must be organized in a linked list structure.", correct: false, rationale: "Linked lists do not allow for the random access required by binary search to jump to the middle element." },
+                    { text: "The data must be sorted in a specific order.", correct: true, rationale: "Binary search relies on the divide-and-conquer strategy, which only works if the data is pre-sorted so halves can be safely eliminated." },
+                    { text: "The data must contain no duplicate values.", correct: false, rationale: "While duplicates can complicate finding a specific instance, binary search can still function on sorted data with duplicates." },
+                    { text: "The data must be less than 1 million items.", correct: false, rationale: "Binary search is actually exponentially faster and more beneficial for very large datasets, not limited to small ones." }
+                ]
+            },
+            {
+                q: "You are given an unsorted linked list containing 50 student names. Which algorithm is the most appropriate choice for finding a specific student's name just once?",
+                hint: "Consider what limitations a linked list has regarding accessing elements in the middle, and how the data's current state affects your options.",
+                options: [
+                    { text: "Binary Search", correct: false, rationale: "Binary search requires sorted data and random access, neither of which are provided by an unsorted linked list." },
+                    { text: "Huffman Coding", correct: false, rationale: "Huffman Coding is a greedy algorithm used for data compression, not for searching a list of items." },
+                    { text: "Greedy Algorithm Strategy", correct: false, rationale: "A greedy strategy is used for optimization problems involving decision making, not standard item lookup." },
+                    { text: "Sequential Search", correct: true, rationale: "For small, unsorted datasets or data structures lacking random access (like linked lists), a sequential check from start to finish is the optimal choice." }
+                ]
+            },
+            {
+                q: "You are using Binary Search to locate a specific record in a sorted array of 1,000 items. What is the maximum number of comparisons needed to either find the target or confirm it is missing?",
+                hint: "Recall the power of halving: if 1,000,000 items takes about 20 steps, how many times can you halve 1,000 before reaching 1?",
+                options: [
+                    { text: "10 comparisons", correct: true, rationale: "Because the search space halves at each step, $\\log_2(1000)$ is roughly 10, meaning it takes a maximum of 10 steps." },
+                    { text: "100 comparisons", correct: false, rationale: "This would be the maximum steps for a sequential search on a much smaller list, not a binary search on 1,000 items." },
+                    { text: "500 comparisons", correct: false, rationale: "This is the average case for a sequential search, representing half of the list." },
+                    { text: "1,000 comparisons", correct: false, rationale: "This is the worst-case scenario for a sequential search, where every item is checked." }
+                ]
+            },
+            {
+                q: "Using a greedy algorithm to make 40¢ in change with standard US coins (25¢, 10¢, 5¢, 1¢), what sequence of coins will the algorithm select?",
+                hint: "A greedy strategy means making the single 'best-looking' choice at each immediate step without looking ahead.",
+                options: [
+                    { text: "Four 10¢ coins", correct: false, rationale: "While this equals 40¢, a greedy algorithm always picks the largest possible coin first, which would be 25¢." },
+                    { text: "One 25¢, one 10¢, and one 5¢", correct: true, rationale: "The algorithm first picks 25¢ (leaving 15¢), then 10¢ (leaving 5¢), and finally 5¢, making the locally optimal choice at every step." },
+                    { text: "One 25¢ and fifteen 1¢ coins", correct: false, rationale: "After picking the 25¢, the greedy algorithm would not skip the 10¢ and 5¢ options, as it always looks for the largest fit." },
+                    { text: "Two 20¢ coins", correct: false, rationale: "20¢ is not a part of the standard US coin denominations provided in the problem." }
+                ]
+            },
+            {
+                q: "A custom vending machine uses coin denominations of 1¢, 3¢, and 4¢. A greedy algorithm is used to dispense 6¢ of change. What coins will the greedy algorithm choose, and what is the actual optimal solution?",
+                hint: "Walk through the greedy steps: what is the largest single coin that fits into 6¢? What remains after you take it?",
+                options: [
+                    { text: "Greedy chooses 3¢, 3¢; Optimal is 3¢, 3¢.", correct: false, rationale: "A greedy algorithm always picks the largest possible coin first, so it would start with 4¢, not 3¢." },
+                    { text: "Greedy chooses 4¢, 1¢, 1¢; Optimal is 3¢, 3¢.", correct: true, rationale: "The greedy approach takes the largest coin (4¢), leaving it to fill the rest with 1¢ coins, failing to see that two 3¢ coins would result in fewer total coins." },
+                    { text: "Greedy chooses 4¢, 2¢; Optimal is 4¢, 1¢, 1¢.", correct: false, rationale: "There is no 2¢ coin available in this specific vending machine's system." },
+                    { text: "Greedy chooses 1¢, 1¢, 1¢, 1¢, 1¢, 1¢; Optimal is 4¢, 1¢, 1¢.", correct: false, rationale: "A greedy algorithm doesn't start with the smallest options; it always attempts to take the largest chunk possible." }
+                ]
+            },
+            {
+                q: "You have four overlapping tasks. Task A ends at 10:00 AM, Task B ends at 11:00 AM, Task C ends at 10:30 AM, and Task D ends at 1:00 PM. According to the Activity Selection greedy strategy, which task should you pick first to maximize the number of tasks you can complete?",
+                hint: "To fit the most items into a schedule, you want to get the first item out of the way as quickly as possible.",
+                options: [
+                    { text: "Task B", correct: false, rationale: "Task B ends later than A and C, leaving less remaining time for subsequent activities." },
+                    { text: "Task C", correct: false, rationale: "While early, Task C still ends later than Task A." },
+                    { text: "Task D", correct: false, rationale: "Task D takes up the most time, meaning picking it would likely block out multiple other shorter tasks." },
+                    { text: "Task A", correct: true, rationale: "The greedy choice for Activity Selection is always picking the activity that ends the earliest, leaving the maximum amount of time for future tasks." }
+                ]
+            },
+            {
+                q: "You are using binary search to look for the number 42 in a sorted array indexed from 0 to 99. The first middle element you check is at index 49, and its value is 60. What is your next logical step?",
+                hint: "Compare your target value with the value you just checked. Which direction in a sorted list contains smaller numbers?",
+                options: [
+                    { text: "Search the right half by setting the low index to 50.", correct: false, rationale: "Because the target (42) is less than the middle value (60), it must be in the left half, not the right." },
+                    { text: "Search the left half by setting the high index to 48.", correct: true, rationale: "Since the target is smaller than the middle element, you eliminate the right half and the middle element, making the new highest boundary one index to the left of the middle." },
+                    { text: "Check index 48 using a sequential search.", correct: false, rationale: "Binary search continues dividing the remaining space in half; it does not revert to checking elements one by one." },
+                    { text: "Calculate a new middle index using 0 and 50.", correct: false, rationale: "The middle index itself (49) has already been checked, so the new high boundary should be 48 to avoid redundant checks." }
+                ]
+            },
+            {
+                q: "A network routing protocol needs to find the shortest path from a source to a destination. At each step, it safely picks the closest unvisited node. Which famous algorithm uses this strategy, and what paradigm does it follow?",
+                hint: "Think of the famous algorithm mentioned in the slides that specifically deals with 'Shortest Path' in graphs.",
+                options: [
+                    { text: "Kruskal's Algorithm; Divide and Conquer Strategy", correct: false, rationale: "Kruskal's algorithm finds a minimum spanning tree, and it is a greedy algorithm, not divide and conquer." },
+                    { text: "Dijkstra's Algorithm; Greedy Strategy", correct: true, rationale: "Dijkstra's algorithm repeatedly makes the locally optimal choice (the closest unvisited node) to eventually find the global shortest path, which is the definition of a greedy strategy." },
+                    { text: "Huffman Coding; Greedy Strategy", correct: false, rationale: "Huffman Coding is a greedy algorithm, but it is used for data compression by assigning short codes to frequent characters, not for routing networks." },
+                    { text: "Dijkstra's Algorithm; Sequential Strategy", correct: false, rationale: "Dijkstra's does not scan every possible path sequentially; it makes selective, optimized choices at each step." }
+                ]
+            },
+            {
+                q: "A program uses Sequential Search to find a target in a list of $n$ elements. If the target happens to be the very last item in the list, what is the time complexity for this specific operation?",
+                hint: "If you have to check every single item in a list of size 'n', how many checks will you perform?",
+                options: [
+                    { text: "$O(1)$", correct: false, rationale: "This would be the time complexity if the target was the very first item in the list." },
+                    { text: "$O(\\log n)$", correct: false, rationale: "This is the time complexity for a binary search, not a sequential search." },
+                    { text: "$O(n)$", correct: true, rationale: "Because the algorithm must check every single item one by one until it reaches the end, the number of operations scales directly with the size of the list." },
+                    { text: "$O(n \\log n)$", correct: false, rationale: "This is typically the time complexity associated with sorting an array, not searching through it linearly." }
+                ]
+            },
+            {
+                q: "A developer designs an algorithm that always makes the locally optimal choice to solve a problem. However, they realize it sometimes fails to find the globally best solution. What alternative algorithmic strategy should they consider for optimization problems where this approach fails?",
+                hint: "Look back at the slides regarding what to do when the Coin Change problem fails due to weird denominations.",
+                options: [
+                    { text: "Sequential Searching", correct: false, rationale: "Sequential searching is used for finding an item in a list, not for solving optimization problems where a greedy approach fails." },
+                    { text: "Binary Splitting", correct: false, rationale: "While binary search uses divide and conquer, 'binary splitting' is not the standard optimization alternative to a failed greedy strategy." },
+                    { text: "Dynamic Programming", correct: true, rationale: "When a greedy algorithm fails because a locally optimal choice blocks the global optimum (like the custom coin change problem), Dynamic Programming is the standard alternative to explore all valid paths efficiently." },
+                    { text: "Sorting the data first", correct: false, rationale: "While sorting is required for binary search, simply sorting data does not fix a fundamentally flawed greedy logic in an optimization problem." }
+                ]
+            }
+        ];
+
+        // --- RENDER LOGIC ---
+        
+        function renderFlashcards() {
+            const grid = document.getElementById('flashcard-grid');
+            flashcardsData.forEach((card, index) => {
+                const cardHtml = `
+                    <div class="perspective-1000 h-56 cursor-pointer" onclick="this.classList.toggle('flipped')">
+                        <div class="flip-card-inner relative w-full h-full transform-style-3d shadow-md rounded-2xl hover:shadow-lg transition-shadow">
+                            <div class="absolute w-full h-full backface-hidden bg-white border border-stone-200 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
+                                <span class="text-xs text-stone-400 font-bold uppercase tracking-widest absolute top-4 left-4">Card ${index + 1}</span>
+                                <h3 class="text-lg font-semibold text-stone-800">${card.front}</h3>
+                            </div>
+                            <div class="absolute w-full h-full backface-hidden rotate-y-180 bg-indigo-50 border border-indigo-100 rounded-2xl p-6 flex items-center justify-center text-center">
+                                <p class="text-indigo-900 font-medium">${card.back}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.innerHTML += cardHtml;
+            });
+        }
+
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            quizData.forEach((item, index) => {
+                const shuffledOptions = shuffle([...item.options]);
+                
+                let optionsHtml = '';
+                shuffledOptions.forEach((opt, optIndex) => {
+                    const inputId = `q${index}-opt${optIndex}`;
+                    optionsHtml += `
+                        <div class="relative flex items-start py-3 border-b border-stone-100 last:border-0">
+                            <div class="flex h-6 items-center">
+                                <input id="${inputId}" name="q${index}" type="radio" value="${opt.correct}" class="h-4 w-4 border-stone-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer">
+                            </div>
+                            <div class="ml-3 text-sm leading-6 flex-1">
+                                <label for="${inputId}" class="font-medium text-stone-700 cursor-pointer block">${opt.text}</label>
+                                <p class="text-sm mt-1 hidden rationale-text" data-correct="${opt.correct}"></p>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Store rationales safely to attach later
+                const cardHtml = `
+                    <div class="bg-white border border-stone-200 rounded-2xl shadow-sm p-6 sm:p-8" id="question-card-${index}">
+                        <h3 class="text-lg font-bold text-stone-800 mb-2"><span class="text-indigo-600 mr-2">Q${index + 1}.</span>${item.q}</h3>
+                        <div class="mb-4">
+                            <button onclick="document.getElementById('hint-${index}').classList.toggle('hidden')" class="text-xs font-semibold text-amber-600 hover:text-amber-700 bg-amber-50 px-2 py-1 rounded">💡 Toggle Hint</button>
+                            <p id="hint-${index}" class="text-sm text-amber-800 bg-amber-50 p-3 rounded-lg mt-2 hidden italic">${item.hint}</p>
+                        </div>
+                        <fieldset class="mt-4">
+                            ${optionsHtml}
+                        </fieldset>
+                        <div class="mt-6 pt-4 border-t border-stone-100 flex justify-between items-center">
+                            <button onclick="checkAnswer(${index})" class="bg-stone-800 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-stone-700 transition-colors">Check Answer</button>
+                            <span id="result-status-${index}" class="text-sm font-bold"></span>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHtml;
+                
+                // Attach rationales to DOM logically
+                setTimeout(() => {
+                    const card = document.getElementById(`question-card-${index}`);
+                    const rationaleParas = card.querySelectorAll('.rationale-text');
+                    shuffledOptions.forEach((opt, oIdx) => {
+                        rationaleParas[oIdx].textContent = opt.rationale;
+                    });
+                }, 0);
+            });
+        }
+
+        // --- INTERACTION LOGIC ---
+
+        function switchTab(tab) {
+            document.getElementById('section-flashcards').classList.add('hidden');
+            document.getElementById('section-quiz').classList.add('hidden');
+            document.getElementById('tab-flashcards').className = 'px-6 py-2 rounded-md text-sm font-medium text-stone-500 hover:text-stone-700 transition-all';
+            document.getElementById('tab-quiz').className = 'px-6 py-2 rounded-md text-sm font-medium text-stone-500 hover:text-stone-700 transition-all';
+
+            document.getElementById(`section-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).className = 'px-6 py-2 rounded-md text-sm font-bold bg-white text-indigo-600 shadow-sm transition-all';
+        }
+
+        function checkAnswer(questionIndex) {
+            const card = document.getElementById(`question-card-${questionIndex}`);
+            const selected = card.querySelector(`input[name="q${questionIndex}"]:checked`);
+            const statusText = document.getElementById(`result-status-${questionIndex}`);
+            
+            if (!selected) {
+                statusText.textContent = "Please select an answer first.";
+                statusText.className = "text-sm font-bold text-amber-600";
+                return;
+            }
+
+            const isCorrect = selected.value === 'true';
+            const allRadios = card.querySelectorAll(`input[name="q${questionIndex}"]`);
+            
+            // Disable all radios and show rationales
+            allRadios.forEach(radio => {
+                radio.disabled = true;
+                const rationalePara = radio.closest('.relative').querySelector('.rationale-text');
+                rationalePara.classList.remove('hidden');
+                
+                if(radio.value === 'true') {
+                    rationalePara.classList.add('text-emerald-700', 'bg-emerald-50', 'p-2', 'rounded');
+                } else if (radio.checked) {
+                    rationalePara.classList.add('text-red-700', 'bg-red-50', 'p-2', 'rounded');
+                } else {
+                    rationalePara.classList.add('text-stone-500');
+                }
+            });
+
+            if (isCorrect) {
+                statusText.textContent = "✅ Correct!";
+                statusText.className = "text-sm font-bold text-emerald-600";
+                card.classList.add('ring-2', 'ring-emerald-400');
+            } else {
+                statusText.textContent = "❌ Incorrect";
+                statusText.className = "text-sm font-bold text-red-600";
+                card.classList.add('ring-2', 'ring-red-400');
+            }
+        }
+
+        // Initialize
+        window.onload = () => {
+            renderFlashcards();
+            renderQuiz();
+            // Tell MathJax to typeset the dynamically added content
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+        };
+    </script>
+</body>
+</html>
+
+
+
