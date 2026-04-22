@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithms: Searches & Greedy Strategy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 350px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 400px; } }
+        .array-box { transition: all 0.3s ease; }
+        .bg-stone-50 { background-color: #fafaf9; }
+        .text-stone-800 { color: #292524; }
+        .nav-link.active { border-bottom: 2px solid #0f766e; color: #0f766e; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 font-sans antialiased">
+
+<!-- Chosen Palette: Warm Neutrals with Teal, Orange, and Blue Accents -->
+<!-- Application Structure Plan: The SPA is structured as an interactive educational hub, moving from foundational theory (Big-O) to specific algorithms (Sequential, Binary, Greedy), and ending with a comparative synthesis and quiz. This linear, scrollable narrative (with top navigation for quick jumps) guides the user from the "why" to the "how," using interactive simulations for each algorithm to demonstrate mechanics better than static slides. -->
+<!-- Visualization & Content Choices: 1. Big-O Chart -> Goal: Compare scaling -> Viz: Chart.js Line Chart -> Interaction: Hover tooltips -> Justification: Shows mathematical growth clearly. 2. Sequential/Binary Arrays -> Goal: Explain mechanics -> Viz: HTML Grid with active states -> Interaction: Step-by-step playback buttons -> Justification: Makes abstract loops tangible. 3. Greedy Coin Demo -> Goal: Show failure states -> Viz: HTML form and dynamic results -> Interaction: Toggle coin sets -> Justification: Proves the greedy hypothesis visually. Confirming NO SVG/Mermaid used. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <nav class="fixed top-0 w-full bg-white/90 backdrop-blur-md shadow-sm z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="font-bold text-xl text-teal-800">Cyber.SoHo EdHub</span>
+                </div>
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="#intro" class="text-stone-600 hover:text-teal-700 px-3 py-2 font-medium text-sm transition-colors">Overview</a>
+                    <a href="#sequential" class="text-stone-600 hover:text-teal-700 px-3 py-2 font-medium text-sm transition-colors">Sequential</a>
+                    <a href="#binary" class="text-stone-600 hover:text-teal-700 px-3 py-2 font-medium text-sm transition-colors">Binary</a>
+                    <a href="#greedy" class="text-stone-600 hover:text-teal-700 px-3 py-2 font-medium text-sm transition-colors">Greedy</a>
+                    <a href="#quiz" class="text-stone-600 hover:text-teal-700 px-3 py-2 font-medium text-sm transition-colors">Knowledge Check</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="pt-20 pb-12 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
+
+        <section id="hero" class="text-center py-16">
+            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-stone-900 mb-4">
+                Algorithms: The Invisible Machinery
+            </h1>
+            <p class="text-xl text-stone-600 max-w-2xl mx-auto">
+                Week 10 / Module 08. Master the three foundational weapons of computer science: Sequential Search, Binary Search, and the Greedy Algorithm Strategy.
+            </p>
+            <div class="mt-10 flex justify-center gap-4">
+                <a href="#intro" class="bg-teal-700 text-white px-6 py-3 rounded-md font-semibold hover:bg-teal-800 transition-colors">Start Learning</a>
+            </div>
+        </section>
+
+        <section id="intro" class="bg-white p-8 rounded-2xl shadow-sm border border-stone-100 scroll-mt-24">
+            <h2 class="text-3xl font-bold mb-6 text-stone-800 border-b pb-4">Why This Matters: Algorithmic Complexity</h2>
+            <p class="text-lg text-stone-600 mb-8 leading-relaxed">
+                Before diving into specific algorithms, we must understand how we measure them. This section introduces "Big-O" notation, the standard method for describing how an algorithm's speed changes as the amount of data grows. Understanding this is crucial because algorithms aren't just abstract theory—they power search engines, GPS routing, and file compression. The chart below visualizes why choosing the right algorithm matters when dealing with massive datasets.
+            </p>
+            
+            <div class="bg-stone-50 p-6 rounded-xl mb-8">
+                <div class="chart-container">
+                    <canvas id="bigOChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white border border-stone-200 p-6 rounded-xl shadow-sm">
+                    <h3 class="text-xl font-bold text-teal-800 mb-2">O(1) & O(log n)</h3>
+                    <p class="text-stone-600"><strong>O(1)</strong> is constant time; the work doesn't change regardless of data size. <strong>O(log n)</strong> grows incredibly slowly. If the list doubles, you only need one more step. Binary Search operates here.</p>
+                </div>
+                <div class="bg-white border border-stone-200 p-6 rounded-xl shadow-sm">
+                    <h3 class="text-xl font-bold text-orange-800 mb-2">O(n) & O(n²)</h3>
+                    <p class="text-stone-600"><strong>O(n)</strong> is linear; doubling the list roughly doubles the work (Sequential Search). <strong>O(n²)</strong> scales poorly, multiplying work exponentially (e.g., Bubble Sort).</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="sequential" class="scroll-mt-24">
+            <div class="bg-blue-50 border border-blue-100 p-8 rounded-2xl shadow-sm">
+                <h2 class="text-3xl font-bold mb-6 text-blue-900 border-b border-blue-200 pb-4">Weapon 1: Sequential Search</h2>
+                <p class="text-lg text-stone-700 mb-8 leading-relaxed">
+                    This section explores Sequential (or Linear) Search. It is the simplest search algorithm, akin to looking for keys in a messy drawer. It works on any list by checking items one by one until the target is found. Use the interactive tool below to see how it painstakingly walks through an unsorted array to find a target value.
+                </p>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <div class="text-stone-700 font-medium">Target: <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-md text-xl">9</span></div>
+                        <div class="flex gap-2">
+                            <button id="seqStepBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium transition-colors">Step Forward</button>
+                            <button id="seqResetBtn" class="bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-2 rounded font-medium transition-colors">Reset</button>
+                        </div>
+                    </div>
+                    
+                    <div id="seqArrayContainer" class="flex flex-wrap justify-center gap-2 mb-8">
+                    </div>
+                    
+                    <div id="seqStatus" class="text-center font-medium text-lg h-8 text-stone-600">Ready to search...</div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-blue-900 mb-2">Characteristics</h4>
+                        <ul class="list-disc list-inside text-stone-700 space-y-1">
+                            <li>No prerequisites on the data (works unsorted).</li>
+                            <li>Average & Worst case: <strong>O(n)</strong>.</li>
+                            <li>Stops the moment it finds the target.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-blue-900 mb-2">When to use it</h4>
+                        <ul class="list-disc list-inside text-stone-700 space-y-1">
+                            <li>Small lists (under ~30 items).</li>
+                            <li>Unsorted data where sorting costs too much.</li>
+                            <li>Searching linked lists.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="binary" class="scroll-mt-24">
+            <div class="bg-teal-50 border border-teal-100 p-8 rounded-2xl shadow-sm">
+                <h2 class="text-3xl font-bold mb-6 text-teal-900 border-b border-teal-200 pb-4">Weapon 2: Binary Search</h2>
+                <p class="text-lg text-stone-700 mb-8 leading-relaxed">
+                    Here we examine Binary Search, the "dictionary trick." This algorithm is massively faster than Sequential Search but comes with a strict golden rule: the data MUST be sorted first. By halving the search space with every step, it achieves incredible efficiency. Interact with the sorted array below to witness the halving magic in action.
+                </p>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <div class="text-stone-700 font-medium">Target: <span class="bg-teal-100 text-teal-800 px-3 py-1 rounded-md text-xl">35</span></div>
+                        <div class="flex gap-2">
+                            <button id="binStepBtn" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded font-medium transition-colors">Step Forward</button>
+                            <button id="binResetBtn" class="bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-2 rounded font-medium transition-colors">Reset</button>
+                        </div>
+                    </div>
+                    
+                    <div id="binArrayContainer" class="flex flex-wrap justify-center gap-2 mb-2">
+                    </div>
+                    <div id="binPointerContainer" class="flex justify-center gap-2 mb-8 text-xs font-bold text-teal-700 h-6">
+                    </div>
+                    
+                    <div id="binStatus" class="text-center font-medium text-lg h-8 text-stone-600">Ready to search...</div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="col-span-2">
+                        <h4 class="font-bold text-teal-900 mb-2">The Halving Magic</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm text-stone-700">
+                                <thead class="border-b-2 border-teal-200">
+                                    <tr>
+                                        <th class="py-2">List Size</th>
+                                        <th class="py-2">Sequential (Worst)</th>
+                                        <th class="py-2">Binary (Worst)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b border-teal-100"><td class="py-2">1,000</td><td class="py-2">1,000 steps</td><td class="py-2 font-bold text-teal-700">10 steps</td></tr>
+                                    <tr class="border-b border-teal-100"><td class="py-2">1,000,000</td><td class="py-2">1,000,000 steps</td><td class="py-2 font-bold text-teal-700">20 steps</td></tr>
+                                    <tr><td class="py-2">1,000,000,000</td><td class="py-2">1,000,000,000 steps</td><td class="py-2 font-bold text-teal-700">30 steps</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-red-700 mb-2">The Golden Rule</h4>
+                        <p class="text-sm text-stone-700 bg-red-50 p-3 rounded border border-red-200">
+                            The data <strong>must</strong> be sorted before Binary Search runs. If unsorted, it silently fails and returns wrong answers without warning.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="greedy" class="scroll-mt-24">
+            <div class="bg-orange-50 border border-orange-100 p-8 rounded-2xl shadow-sm">
+                <h2 class="text-3xl font-bold mb-6 text-orange-900 border-b border-orange-200 pb-4">Weapon 3: Greedy Strategy</h2>
+                <p class="text-lg text-stone-700 mb-8 leading-relaxed">
+                    The Greedy Algorithm is a mindset, not a fixed recipe. At every step, it takes the best option available right now, with no backtracking. While incredibly fast and useful for things like GPS routing and file compression, it isn't always perfect. Use the coin change simulator below to see when a greedy strategy succeeds, and when it confidently gives the wrong answer.
+                </p>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm mb-6">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="font-bold text-lg mb-4 text-stone-800">Coin Change Simulator</h3>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-stone-700 mb-1">Target Amount</label>
+                                <input type="number" id="greedyTarget" value="6" class="w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:border-orange-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-stone-700 mb-1">Available Denominations</label>
+                                <select id="greedyCoins" class="w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:border-orange-500">
+                                    <option value="standard">Standard: 25, 10, 5, 1 (Optimal)</option>
+                                    <option value="weird" selected>Odd Set: 4, 3, 1 (Might Fail)</option>
+                                </select>
+                            </div>
+                            <button id="greedyRunBtn" class="w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded font-medium transition-colors">Run Greedy Algorithm</button>
+                        </div>
+                        <div class="bg-stone-50 border border-stone-200 rounded-lg p-4 flex flex-col justify-center">
+                            <h4 class="font-bold text-stone-700 mb-2 text-center border-b pb-2">Algorithm Output</h4>
+                            <div id="greedyResultCoins" class="flex flex-wrap justify-center gap-2 mb-4 min-h-[3rem] items-center">
+                                <span class="text-stone-400 italic">Awaiting input...</span>
+                            </div>
+                            <div id="greedyStatus" class="text-center font-medium text-sm text-stone-700 bg-white p-2 rounded border border-stone-200">
+                                Output metrics will appear here.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-green-700 mb-2">Where it Wins (Optimal)</h4>
+                        <ul class="list-disc list-inside text-stone-700 space-y-1">
+                            <li>Standard coin change (USD, EUR).</li>
+                            <li>Dijkstra's Shortest Path (GPS).</li>
+                            <li>Huffman coding (JPEG/ZIP compression).</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-red-700 mb-2">Where it Loses (Wrong)</h4>
+                        <ul class="list-disc list-inside text-stone-700 space-y-1">
+                            <li>Odd coin denominations (as seen above).</li>
+                            <li>0/1 Knapsack Problem (packing for max value).</li>
+                            <li>Scheduling with complex constraints.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="quiz" class="bg-white p-8 rounded-2xl shadow-sm border border-stone-200 scroll-mt-24">
+            <h2 class="text-3xl font-bold mb-6 text-stone-800 border-b pb-4">Synthesis & Knowledge Check</h2>
+            <p class="text-lg text-stone-600 mb-8 leading-relaxed">
+                The ultimate meta-skill is matching the algorithm to the problem. There is no universal best tool. Review the comparison, then test your ability to apply these concepts to real-world scenarios in the mini-quiz below.
+            </p>
+
+            <div class="overflow-x-auto mb-12">
+                <table class="w-full text-left bg-stone-50 rounded-lg overflow-hidden border border-stone-200">
+                    <thead class="bg-stone-200 text-stone-800">
+                        <tr>
+                            <th class="p-3">Aspect</th>
+                            <th class="p-3 border-l border-white text-blue-900">Sequential</th>
+                            <th class="p-3 border-l border-white text-teal-900">Binary</th>
+                            <th class="p-3 border-l border-white text-orange-900">Greedy</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-stone-700">
+                        <tr class="border-b border-stone-200">
+                            <td class="p-3 font-medium">Data sorted?</td>
+                            <td class="p-3 border-l border-stone-200">No</td>
+                            <td class="p-3 border-l border-stone-200 font-bold">YES</td>
+                            <td class="p-3 border-l border-stone-200">Usually yes</td>
+                        </tr>
+                        <tr class="border-b border-stone-200">
+                            <td class="p-3 font-medium">Worst case</td>
+                            <td class="p-3 border-l border-stone-200">O(n)</td>
+                            <td class="p-3 border-l border-stone-200">O(log n)</td>
+                            <td class="p-3 border-l border-stone-200">O(n) or O(n log n)</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-medium">Metaphor</td>
+                            <td class="p-3 border-l border-stone-200">Messy drawer</td>
+                            <td class="p-3 border-l border-stone-200">Dictionary</td>
+                            <td class="p-3 border-l border-stone-200">Coin purse</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bg-stone-100 p-6 rounded-xl border border-stone-200">
+                <h3 class="font-bold text-xl mb-4">Mini Quiz: Which algorithm to use?</h3>
+                <div class="space-y-6" id="quizContainer">
+                </div>
+            </div>
+        </section>
+        
+        <footer class="text-center text-sm text-stone-500 pb-8">
+            <p>Intellectual Property: All original content © Cyber.SoHo Educational Hub.</p>
+            <p>From the Industry to the Classroom — Building the IT's Future, Today and Together!</p>
+        </footer>
+
+    </main>
+
+    <script>
+        const ctx = document.getElementById('bigOChart').getContext('2d');
+        const labels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'O(1) Constant',
+                        data: labels.map(() => 5),
+                        borderColor: '#10b981',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'O(log n) Logarithmic',
+                        data: labels.map(x => Math.log2(x) * 10),
+                        borderColor: '#0f766e',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'O(n) Linear',
+                        data: labels.map(x => x * 10),
+                        borderColor: '#3b82f6',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'O(n²) Quadratic',
+                        data: labels.map(x => x * x * 2),
+                        borderColor: '#ef4444',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: { display: true, text: 'Operations / Time' },
+                        ticks: { display: false }
+                    },
+                    x: {
+                        title: { display: true, text: 'Input Size (n)' }
+                    }
+                }
+            }
+        });
+
+        const seqArray = [14, 23, 7, 9, 3, 11];
+        const seqTarget = 9;
+        let seqIndex = 0;
+        const seqContainer = document.getElementById('seqArrayContainer');
+        const seqStatus = document.getElementById('seqStatus');
+        
+        function renderSeqArray() {
+            seqContainer.innerHTML = '';
+            seqArray.forEach((val, idx) => {
+                const box = document.createElement('div');
+                box.className = `array-box w-12 h-12 flex items-center justify-center font-bold text-lg rounded border-2 shadow-sm 
+                    ${idx < seqIndex ? 'bg-stone-200 border-stone-300 text-stone-500' : 
+                      idx === seqIndex ? 'bg-yellow-100 border-yellow-400 text-yellow-800 scale-110' : 
+                      'bg-white border-blue-200 text-blue-900'}`;
+                box.textContent = val;
+                seqContainer.appendChild(box);
+            });
+        }
+
+        document.getElementById('seqStepBtn').addEventListener('click', () => {
+            if (seqIndex >= seqArray.length) return;
+            renderSeqArray();
+            
+            if (seqArray[seqIndex] === seqTarget) {
+                seqStatus.innerHTML = `<span class="text-green-600 font-bold">Found ${seqTarget} at index ${seqIndex}! Stop search.</span>`;
+                seqIndex = seqArray.length;
+                document.getElementById('seqArrayContainer').children[seqIndex - 1].className = 'array-box w-12 h-12 flex items-center justify-center font-bold text-lg rounded border-2 shadow-sm bg-green-100 border-green-500 text-green-800 scale-110';
+            } else {
+                seqStatus.textContent = `Checking index ${seqIndex}. ${seqArray[seqIndex]} is not ${seqTarget}. Moving next.`;
+                seqIndex++;
+            }
+        });
+
+        document.getElementById('seqResetBtn').addEventListener('click', () => {
+            seqIndex = 0;
+            seqStatus.textContent = 'Ready to search...';
+            renderSeqArray();
+        });
+        
+        renderSeqArray();
+
+        const binArray = [3, 7, 9, 11, 14, 23, 35, 42, 50];
+        const binTarget = 35;
+        let binLow = 0;
+        let binHigh = binArray.length - 1;
+        let binMid = -1;
+        let binState = 'init'; 
+        
+        const binContainer = document.getElementById('binArrayContainer');
+        const binPtrContainer = document.getElementById('binPointerContainer');
+        const binStatus = document.getElementById('binStatus');
+
+        function renderBinArray() {
+            binContainer.innerHTML = '';
+            binPtrContainer.innerHTML = '';
+            
+            binArray.forEach((val, idx) => {
+                const box = document.createElement('div');
+                let styling = 'bg-white border-teal-200 text-teal-900';
+                if (idx < binLow || idx > binHigh) styling = 'bg-stone-100 border-stone-200 text-stone-300 opacity-50';
+                if (idx === binMid && binState === 'check') styling = 'bg-yellow-100 border-yellow-400 text-yellow-800 scale-110';
+                if (idx === binMid && binState === 'found') styling = 'bg-green-100 border-green-500 text-green-800 scale-110';
+                
+                box.className = `array-box w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center font-bold text-sm sm:text-lg rounded border-2 shadow-sm ${styling}`;
+                box.textContent = val;
+                binContainer.appendChild(box);
+
+                const ptrBox = document.createElement('div');
+                ptrBox.className = 'w-10 sm:w-12 text-center leading-none';
+                let ptrText = '';
+                if (idx === binLow) ptrText += 'L ';
+                if (idx === binMid && binState !== 'init') ptrText += 'M ';
+                if (idx === binHigh) ptrText += 'H';
+                ptrBox.textContent = ptrText;
+                binPtrContainer.appendChild(ptrBox);
+            });
+        }
+
+        document.getElementById('binStepBtn').addEventListener('click', () => {
+            if (binState === 'found' || binLow > binHigh) return;
+
+            if (binState === 'init' || binState === 'adjust') {
+                binMid = Math.floor((binLow + binHigh) / 2);
+                binState = 'check';
+                binStatus.textContent = `Calculate Middle: index ${binMid}. Value is ${binArray[binMid]}.`;
+            } else if (binState === 'check') {
+                if (binArray[binMid] === binTarget) {
+                    binState = 'found';
+                    binStatus.innerHTML = `<span class="text-green-600 font-bold">Found ${binTarget} at mid! Stop search.</span>`;
+                } else if (binArray[binMid] < binTarget) {
+                    binStatus.textContent = `${binArray[binMid]} is too small. Discard left half. Low becomes ${binMid + 1}.`;
+                    binLow = binMid + 1;
+                    binState = 'adjust';
+                } else {
+                    binStatus.textContent = `${binArray[binMid]} is too large. Discard right half. High becomes ${binMid - 1}.`;
+                    binHigh = binMid - 1;
+                    binState = 'adjust';
+                }
+            }
+            renderBinArray();
+        });
+
+        document.getElementById('binResetBtn').addEventListener('click', () => {
+            binLow = 0;
+            binHigh = binArray.length - 1;
+            binMid = -1;
+            binState = 'init';
+            binStatus.textContent = 'Ready to search...';
+            renderBinArray();
+        });
+
+        renderBinArray();
+
+        document.getElementById('greedyRunBtn').addEventListener('click', () => {
+            const target = parseInt(document.getElementById('greedyTarget').value);
+            const coinSet = document.getElementById('greedyCoins').value;
+            let coins = coinSet === 'standard' ? [25, 10, 5, 1] : [4, 3, 1];
+            
+            let remaining = target;
+            let resultCoins = [];
+            
+            if (isNaN(target) || target <= 0) {
+                document.getElementById('greedyStatus').textContent = "Please enter a valid positive number.";
+                return;
+            }
+
+            for (let i = 0; i < coins.length; i++) {
+                while (remaining >= coins[i]) {
+                    resultCoins.push(coins[i]);
+                    remaining -= coins[i];
+                }
+            }
+
+            const container = document.getElementById('greedyResultCoins');
+            container.innerHTML = '';
+            resultCoins.forEach(coin => {
+                const coinEl = document.createElement('div');
+                coinEl.className = 'w-10 h-10 rounded-full bg-orange-200 border-2 border-orange-500 text-orange-900 font-bold flex items-center justify-center shadow';
+                coinEl.textContent = coin;
+                container.appendChild(coinEl);
+            });
+
+            const statusEl = document.getElementById('greedyStatus');
+            if (coinSet === 'weird' && target === 6) {
+                statusEl.innerHTML = `<span class="text-red-600 font-bold">Greedy picked ${resultCoins.length} coins. But true minimum is 2 coins (3, 3)!</span> This demonstrates where Greedy fails.`;
+            } else {
+                statusEl.innerHTML = `Greedy picked <span class="font-bold">${resultCoins.length}</span> coins successfully.`;
+            }
+        });
+
+        const quizData = [
+            { q: "1. Phone contact list that is NOT sorted", options: ["Sequential", "Binary", "Greedy"], a: 0 },
+            { q: "2. Finding a word in a printed thesaurus", options: ["Sequential", "Binary", "Greedy"], a: 1 },
+            { q: "3. Giving weekly bonuses to top salespeople until pool is empty", options: ["Sequential", "Binary", "Greedy"], a: 2 },
+            { q: "4. Locating 'recursion' in a textbook's index", options: ["Sequential", "Binary", "Greedy"], a: 1 }
+        ];
+
+        const quizContainer = document.getElementById('quizContainer');
+        quizData.forEach((item, idx) => {
+            const block = document.createElement('div');
+            block.className = 'quiz-block';
+            
+            let btnHtml = item.options.map((opt, oIdx) => 
+                `<button onclick="checkAnswer(${idx}, ${oIdx}, this)" class="px-4 py-2 bg-white border border-stone-300 rounded hover:bg-stone-50 transition-colors text-sm font-medium mr-2 mt-2">${opt}</button>`
+            ).join('');
+
+            block.innerHTML = `
+                <p class="font-medium text-stone-800">${item.q}</p>
+                <div class="flex flex-wrap">${btnHtml}</div>
+                <div id="feedback-${idx}" class="mt-2 text-sm font-bold hidden"></div>
+            `;
+            quizContainer.appendChild(block);
+        });
+
+        window.checkAnswer = function(qIdx, oIdx, btn) {
+            const feedback = document.getElementById(`feedback-${qIdx}`);
+            const buttons = btn.parentElement.querySelectorAll('button');
+            buttons.forEach(b => b.disabled = true);
+            
+            feedback.classList.remove('hidden');
+            if (quizData[qIdx].a === oIdx) {
+                btn.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+                feedback.textContent = 'Correct!';
+                feedback.classList.add('text-green-600');
+            } else {
+                btn.classList.add('bg-red-100', 'border-red-500', 'text-red-800');
+                buttons[quizData[qIdx].a].classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+                feedback.textContent = 'Incorrect.';
+                feedback.classList.add('text-red-600');
+            }
+        };
+
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('text-teal-700', 'border-b-2', 'border-teal-700');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('text-teal-700', 'border-b-2', 'border-teal-700');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
+

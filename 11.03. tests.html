@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithms Study Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    <style>
+        /* Custom styles for 3D Flashcard Flip */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-preserve-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        
+        .flip-card-inner {
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .flip-card-back {
+            transform: rotateY(180deg);
+            background-color: #f0fdfa; /* Teal 50 */
+            border: 2px solid #14b8a6; /* Teal 500 */
+        }
+        
+        .flip-card-front {
+            background-color: white;
+            border: 2px solid #e7e5e4; /* Stone 200 */
+        }
+
+        /* Tab Active States */
+        .tab-btn.active {
+            border-bottom: 3px solid #0f766e;
+            color: #0f766e;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 font-sans min-h-screen flex flex-col items-center py-10 px-4">
+
+    <div class="max-w-4xl w-full bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+        
+        <div class="bg-stone-100 border-b border-stone-200 px-6 pt-6">
+            <h1 class="text-3xl font-extrabold text-stone-900 mb-6 text-center">Algorithms Study Hub</h1>
+            <div class="flex justify-center space-x-8">
+                <button id="tab-flashcards" class="tab-btn active pb-3 px-4 text-stone-500 hover:text-teal-700 transition-colors text-lg" onclick="switchTab('flashcards')">
+                    Flashcards
+                </button>
+                <button id="tab-quiz" class="tab-btn pb-3 px-4 text-stone-500 hover:text-teal-700 transition-colors text-lg" onclick="switchTab('quiz')">
+                    Knowledge Quiz
+                </button>
+            </div>
+        </div>
+
+        <div class="p-6 md:p-10 min-h-[500px]">
+            
+            <div id="view-flashcards" class="block flex flex-col items-center">
+                <div class="w-full flex justify-between items-center mb-6 text-sm font-bold text-stone-500 uppercase tracking-wider">
+                    <span>Topic: Searches & Greedy Strategy</span>
+                    <span id="card-counter">Card 1 / 25</span>
+                </div>
+
+                <div class="relative w-full max-w-2xl h-64 md:h-80 perspective-1000 cursor-pointer group" onclick="flipCard()">
+                    <div id="flashcard-inner" class="flip-card-inner">
+                        <div class="flip-card-front group-hover:border-teal-300 transition-colors">
+                            <h2 id="card-front-text" class="text-2xl md:text-3xl font-bold text-stone-800 leading-snug"></h2>
+                        </div>
+                        <div class="flip-card-back">
+                            <p id="card-back-text" class="text-xl md:text-2xl font-medium text-teal-900 leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 text-sm text-stone-400 italic">Click the card to flip</div>
+
+                <div class="flex gap-4 mt-8">
+                    <button onclick="prevCard()" class="px-6 py-3 bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold rounded-lg transition-colors">
+                        &#8592; Previous
+                    </button>
+                    <button onclick="nextCard()" class="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg transition-colors">
+                        Next &#8594;
+                    </button>
+                </div>
+            </div>
+
+            <div id="view-quiz" class="hidden flex flex-col">
+                <div class="w-full flex justify-between items-center mb-6 text-sm font-bold text-stone-500 uppercase tracking-wider border-b border-stone-200 pb-4">
+                    <span>Application Assessment</span>
+                    <span id="quiz-counter">Question 1 / 10</span>
+                </div>
+
+                <div id="quiz-content" class="w-full max-w-3xl mx-auto">
+                    <h2 id="quiz-question" class="text-xl md:text-2xl font-bold text-stone-800 mb-6 leading-relaxed"></h2>
+                    
+                    <div id="quiz-options" class="space-y-3 mb-6">
+                        </div>
+
+                    <button id="hint-btn" onclick="toggleHint()" class="text-orange-600 hover:text-orange-700 text-sm font-bold flex items-center mb-4 transition-colors">
+                        <span class="mr-1">&#9881;</span> Need a hint?
+                    </button>
+                    <div id="quiz-hint" class="hidden bg-orange-50 border border-orange-200 text-orange-800 p-4 rounded-lg text-sm mb-6 font-medium"></div>
+
+                    <div id="quiz-feedback" class="hidden p-4 rounded-lg mb-6 font-medium text-lg border"></div>
+
+                    <div class="flex justify-end border-t border-stone-200 pt-6">
+                        <button id="quiz-next-btn" onclick="nextQuestion()" class="hidden px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg transition-colors">
+                            Next Question &#8594;
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="quiz-results" class="hidden text-center py-10">
+                    <h2 class="text-4xl font-extrabold text-stone-800 mb-4">Quiz Complete!</h2>
+                    <p class="text-2xl font-medium text-stone-600 mb-8">You scored <span id="final-score" class="text-teal-600 font-bold"></span> out of 10.</p>
+                    <button onclick="restartQuiz()" class="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg transition-colors text-lg">
+                        Restart Quiz &#8635;
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- DATA PAYLOADS ---
+
+        const flashcardsData = [
+            { front: "Sequential Search", back: "The simplest search algorithm that checks items one by one until a match is found or the list ends." },
+            { front: "Data prerequisites for Sequential Search", back: "None; it works on any list, whether sorted or unsorted." },
+            { front: "Worst-case time complexity of Sequential Search", back: "$O(n)$" },
+            { front: "Best-case time complexity of Sequential Search", back: "$O(1)$" },
+            { front: "Ideal use cases for Sequential Search", back: "Small lists, unsorted data where sorting is costly, one-off scans, and linked lists." },
+            { front: "Classroom metaphor for Sequential Search", back: "Looking for your car keys in a messy drawer." },
+            { front: "Binary Search", back: "A search algorithm that repeatedly halves the search space by comparing the target to the middle element." },
+            { front: "Strict prerequisite for Binary Search", back: "The data MUST be sorted before the algorithm runs." },
+            { front: "Worst-case time complexity of Binary Search", back: "$O(\\log n)$" },
+            { front: "Result of running Binary Search on unsorted data", back: "It runs without errors but silently returns a confidently wrong answer." },
+            { front: "Famous implementation pitfall of Binary Search", back: "The off-by-one bug, which can easily lead to an infinite loop or a skipped answer." },
+            { front: "Classroom metaphor for Binary Search", back: "Finding a specific word in a paper dictionary by halving the pages." },
+            { front: "Greedy Algorithm Strategy", back: "A problem-solving mindset that takes the best available option at every step without backtracking or looking ahead." },
+            { front: "Trade-off of using a Greedy Algorithm", back: "It provides simplicity and speed in exchange for having no global guarantee of being the most optimal solution." },
+            { front: "Typical time complexity of a Greedy Algorithm", back: "$O(n)$ or $O(n \\log n)$ if a sort step is required first." },
+            { front: "Problems where the Greedy Strategy is optimal", back: "Standard coin change, Minimum Spanning Trees (Kruskal's/Prim's), Dijkstra's shortest path, and Huffman coding." },
+            { front: "Problems where the Greedy Strategy fails to be optimal", back: "Coin change with odd denominations and the 0/1 Knapsack Problem." },
+            { front: "Meaning of $O(1)$", back: "Constant time; the amount of work remains the exact same regardless of the input size." },
+            { front: "Meaning of $O(\\log n)$", back: "Logarithmic time; it grows very slowly. If the list doubles in size, you only need one more step." },
+            { front: "Meaning of $O(n)$", back: "Linear time; the work grows proportionally with the list size. Doubling the list roughly doubles the work." },
+            { front: "Meaning of $O(n^2)$", back: "Quadratic time; it scales poorly, usually occurring when an algorithm checks every item against every other item." },
+            { front: "Best search algorithm for an unsorted phone contact list", back: "Sequential Search" },
+            { front: "Best search algorithm for finding a word in a printed thesaurus", back: "Binary Search" },
+            { front: "Best strategy for distributing weekly bonuses to top salespeople until the pool is empty", back: "Greedy Algorithm Strategy" },
+            { front: "Huffman coding (used inside JPEG, MP3, and ZIP files)", back: "A famous and highly successful real-world application of the Greedy Algorithm." }
+        ];
+
+        const quizData = [
+            {
+                question: "A developer runs Binary Search on an array of 1,000,000 unordered user IDs. What will be the most likely outcome?",
+                options: [
+                    { text: "It will throw an exception warning that the array is unsorted.", rationale: "Standard implementations do not verify sorted status, as doing so ruins the speed advantage.", isCorrect: false },
+                    { text: "It will confidently return a wrong answer or fail silently.", rationale: "It blindly halves data assuming perfect order, leading it to look in wrong sections and miss the target.", isCorrect: true },
+                    { text: "It will take $O(n)$ time as it falls back to a sequential search.", rationale: "It does not have a fallback mechanism; it executes halving logic regardless.", isCorrect: false },
+                    { text: "It will successfully find the ID in $O(\\log n)$ time.", rationale: "Logarithmic speed relies entirely on the guarantee that eliminating half eliminates impossible answers, untrue for random data.", isCorrect: false }
+                ],
+                hint: "Think about what happens if you apply the 'dictionary halving trick' to a shuffled book."
+            },
+            {
+                question: "You are looking for a specific value in an unsorted array using Sequential Search. What is the worst-case time complexity, and when does it occur?",
+                options: [
+                    { text: "$O(1)$; when the list has fewer than 30 items.", rationale: "Constant time occurs only if the target is the very first element checked.", isCorrect: false },
+                    { text: "$O(\\log n)$; when the item is exactly in the middle of the array.", rationale: "This algorithm walks step-by-step and cannot achieve logarithmic efficiency.", isCorrect: false },
+                    { text: "$O(n)$; when the target is the last element or not present at all.", rationale: "In the worst scenario, the algorithm inspects every single item before terminating.", isCorrect: true },
+                    { text: "$O(n^2)$; when the array contains duplicate values.", rationale: "Quadratic time implies checking every item against every other item, unlike a simple linear walk.", isCorrect: false }
+                ],
+                hint: "Consider what happens to the workload if the item simply isn't in the drawer."
+            },
+            {
+                question: "You need to process a one-off CSV dump of 25 unsorted records to find a specific entry. Which search algorithm is the most appropriate choice?",
+                options: [
+                    { text: "Binary Search", rationale: "Applying a sort just to prepare a tiny list requires more effort than checking items directly.", isCorrect: false },
+                    { text: "Sequential Search", rationale: "For very small, unsorted datasets scanned once, a straightforward linear walk avoids sorting overhead.", isCorrect: true },
+                    { text: "Greedy Search", rationale: "This is for optimization problems, not retrieving specific values in a list.", isCorrect: false },
+                    { text: "Dijkstra's Algorithm", rationale: "This is a graph-traversal algorithm for shortest paths, irrelevant here.", isCorrect: false }
+                ],
+                hint: "Remember the computational cost of sorting versus searching small datasets."
+            },
+            {
+                question: "In which of the following scenarios is a Greedy Algorithm strategy guaranteed to give the WRONG or suboptimal answer?",
+                options: [
+                    { text: "Calculating the shortest path on a GPS using Dijkstra's algorithm.", rationale: "This famously guarantees the optimal global path.", isCorrect: false },
+                    { text: "Making change with standard US currency.", rationale: "Standard systems are designed so picking the largest coin works perfectly.", isCorrect: false },
+                    { text: "Packing a bag to maximize value within a strict weight limit (0/1 Knapsack Problem).", rationale: "Picking the single most valuable item first might prevent packing multiple smaller items yielding higher total value.", isCorrect: true },
+                    { text: "Compressing a text file using Huffman coding.", rationale: "This locally optimal choice perfectly builds a prefix tree for optimal compression.", isCorrect: false }
+                ],
+                hint: "Think about when taking the biggest option blocks a better combination of smaller options."
+            },
+            {
+                question: "If a sorted list grows from 1,000 items to 1,000,000 items, how does the worst-case number of steps for Binary Search change?",
+                options: [
+                    { text: "It increases from 1,000 steps to 1,000,000 steps.", rationale: "This describes the linear scaling of a sequential walk.", isCorrect: false },
+                    { text: "It increases by exactly 10 steps.", rationale: "Because it cuts the space in half, multiplying size by 1,000 only requires ~10 more halving operations.", isCorrect: true },
+                    { text: "It remains constant at $O(1)$.", rationale: "The larger space requires some additional effort, so it cannot be perfectly constant.", isCorrect: false },
+                    { text: "It doubles the required number of steps.", rationale: "Doubling the list adds just one step; multiplying by 1,000 adds a handful, not double.", isCorrect: false }
+                ],
+                hint: "Review the 'halving magic' across order-of-magnitude jumps."
+            },
+            {
+                question: "A junior developer replaces a search function that runs in $O(n)$ time with a sorting and searching pipeline that runs in $O(n \\log n)$ time. Assuming a massive dataset, what happens?",
+                options: [
+                    { text: "The new pipeline will be significantly faster.", rationale: "Multiplying input size by its logarithm creates more operations than input size alone.", isCorrect: false },
+                    { text: "The performance will remain exactly the same.", rationale: "Linear and log-linear are distinct mathematical curves that scale differently.", isCorrect: false },
+                    { text: "The new pipeline will be slower because $O(n \\log n)$ scales worse than $O(n)$.", rationale: "Log-linear requires slightly more steps per element than a simple linear pass.", isCorrect: true },
+                    { text: "The new pipeline will take constant time $O(1)$ to execute.", rationale: "Neither represents operations finishing in exact same time regardless of size.", isCorrect: false }
+                ],
+                hint: "Compare a straight line curve versus a curve multiplying input by its logarithm."
+            },
+            {
+                question: "Why did it take until 2006 for a completely bug-free Binary Search implementation to appear in widely used standard libraries?",
+                options: [
+                    { text: "The 'off-by-one' bug frequently caused infinite loops or skipped answers at boundaries.", rationale: "Managing math for high/low/mid pointers is notoriously tricky, leading to boundary errors.", isCorrect: true },
+                    { text: "Computers before 2006 were not fast enough.", rationale: "It is incredibly efficient and has run on constrained hardware since the 1940s.", isCorrect: false },
+                    { text: "The algorithm requires $O(n^2)$ memory space.", rationale: "It tracks only a few pointers, requiring virtually zero extra auxiliary space.", isCorrect: false },
+                    { text: "The Greedy strategy used inside it was not fully proven.", rationale: "It relies on divide-and-conquer, not local-optimization.", isCorrect: false }
+                ],
+                hint: "Consider the difficulty of precisely updating pointers without overlapping them."
+            },
+            {
+                question: "Which of the following best describes the core operational rule of a Greedy Algorithm?",
+                options: [
+                    { text: "It explores all possible paths simultaneously.", rationale: "Checking every possibility is dynamic programming/brute-force, sacrificing speed for accuracy.", isCorrect: false },
+                    { text: "It recursively divides the problem into smaller subproblems.", rationale: "This is the hallmark of the Divide and Conquer strategy.", isCorrect: false },
+                    { text: "It makes the locally optimal choice at each stage with no backtracking.", rationale: "It commits immediately to the most profitable option right now and never revisits it.", isCorrect: true },
+                    { text: "It randomly guesses solutions.", rationale: "It follows a strict, deterministic mathematical rule based on immediate value.", isCorrect: false }
+                ],
+                hint: "Think about handing back change using the largest coins first."
+            },
+            {
+                question: "You need to search for a value inside a standard Linked List data structure. Which algorithm is best suited, and why?",
+                options: [
+                    { text: "Binary Search, because Linked Lists are naturally sorted.", rationale: "Nodes are scattered randomly in memory; you cannot instantly jump to the middle.", isCorrect: false },
+                    { text: "Sequential Search, because Linked Lists do not support random access.", rationale: "Since you must follow pointers node-by-node, a linear walk from the start is the only way.", isCorrect: true },
+                    { text: "Greedy Algorithm, because finding the shortest path is an optimization problem.", rationale: "Scanning a 1D list is data retrieval, not complex routing.", isCorrect: false },
+                    { text: "Binary Search, because checking the middle node takes $O(1)$ time.", rationale: "Finding the middle requires traversing half the nodes one by one, defeating the speed advantage.", isCorrect: false }
+                ],
+                hint: "Consider how you physically navigate from item to item in this specific structure."
+            },
+            {
+                question: "You are creating an auto-complete feature using a dictionary of 100,000 alphabetically ordered words. Which search provides the fastest lookup?",
+                options: [
+                    { text: "Binary Search", rationale: "Because it's perfectly sorted, it instantly eliminates half the remaining words per keystroke.", isCorrect: true },
+                    { text: "Sequential Search", rationale: "Checking word-by-word from 'A' every keystroke would cause noticeable lag.", isCorrect: false },
+                    { text: "Huffman Coding", rationale: "This is for file compression, not searching strings.", isCorrect: false },
+                    { text: "Bubble Sort", rationale: "Unnecessary since the dictionary is already ordered.", isCorrect: false }
+                ],
+                hint: "The data is massive and already perfectly ordered from A to Z."
+            }
+        ];
+
+        // --- TAB LOGIC ---
+        function switchTab(tabId) {
+            document.getElementById('tab-flashcards').classList.remove('active');
+            document.getElementById('tab-quiz').classList.remove('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            if (tabId === 'flashcards') {
+                document.getElementById('view-flashcards').classList.remove('hidden');
+                document.getElementById('view-quiz').classList.add('hidden');
+            } else {
+                document.getElementById('view-flashcards').classList.add('hidden');
+                document.getElementById('view-quiz').classList.remove('hidden');
+            }
+        }
+
+        // --- FLASHCARD LOGIC ---
+        let currentCard = 0;
+        let isFlipped = false;
+
+        function renderFlashcard() {
+            const cardInner = document.getElementById('flashcard-inner');
+            if (isFlipped) {
+                cardInner.parentElement.classList.remove('flipped');
+                isFlipped = false;
+                // Wait for flip animation before changing text to prevent jarring flash
+                setTimeout(() => updateCardText(), 300);
+            } else {
+                updateCardText();
+            }
+        }
+
+        function updateCardText() {
+            document.getElementById('card-front-text').innerHTML = flashcardsData[currentCard].front;
+            document.getElementById('card-back-text').innerHTML = flashcardsData[currentCard].back;
+            document.getElementById('card-counter').innerText = `Card ${currentCard + 1} / ${flashcardsData.length}`;
+            
+            // Re-render MathJax (Check if fully loaded to prevent initial script error)
+            if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                MathJax.typesetPromise([document.getElementById('card-front-text'), document.getElementById('card-back-text')]).catch(err => console.log('MathJax error:', err));
+            }
+        }
+
+        function flipCard() {
+            const cardWrapper = document.getElementById('flashcard-inner').parentElement;
+            isFlipped = !isFlipped;
+            if (isFlipped) {
+                cardWrapper.classList.add('flipped');
+            } else {
+                cardWrapper.classList.remove('flipped');
+            }
+        }
+
+        function nextCard() {
+            if (currentCard < flashcardsData.length - 1) {
+                currentCard++;
+                renderFlashcard();
+            }
+        }
+
+        function prevCard() {
+            if (currentCard > 0) {
+                currentCard--;
+                renderFlashcard();
+            }
+        }
+
+        // --- QUIZ LOGIC ---
+        let currentQuizIndex = 0;
+        let quizScore = 0;
+        let answerSelected = false;
+
+        function renderQuiz() {
+            if (currentQuizIndex >= quizData.length) {
+                showQuizResults();
+                return;
+            }
+
+            const qData = quizData[currentQuizIndex];
+            answerSelected = false;
+
+            document.getElementById('quiz-counter').innerText = `Question ${currentQuizIndex + 1} / ${quizData.length}`;
+            document.getElementById('quiz-question').innerHTML = qData.question;
+            
+            // Reset Hint & Feedback
+            document.getElementById('quiz-hint').classList.add('hidden');
+            document.getElementById('quiz-hint').innerText = "Hint: " + qData.hint;
+            document.getElementById('quiz-feedback').classList.add('hidden');
+            document.getElementById('quiz-next-btn').classList.add('hidden');
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+
+            // Shuffle options visually
+            let shuffledOptions = [...qData.options].map((opt, idx) => ({...opt, originalIndex: idx}));
+            shuffledOptions.sort(() => Math.random() - 0.5);
+
+            shuffledOptions.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors font-medium text-stone-700 bg-white shadow-sm";
+                btn.innerHTML = opt.text;
+                btn.onclick = () => selectAnswer(btn, opt);
+                optionsContainer.appendChild(btn);
+            });
+
+            if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                MathJax.typesetPromise([document.getElementById('quiz-content')]).catch(err => console.log('MathJax error:', err));
+            }
+        }
+
+        function toggleHint() {
+            const hintDiv = document.getElementById('quiz-hint');
+            hintDiv.classList.toggle('hidden');
+        }
+
+        function selectAnswer(btnElement, optionData) {
+            if (answerSelected) return; // Prevent multiple clicks
+            answerSelected = true;
+
+            const allButtons = document.getElementById('quiz-options').children;
+            for (let b of allButtons) {
+                b.disabled = true;
+                b.classList.remove('hover:bg-stone-50');
+            }
+
+            const feedbackDiv = document.getElementById('quiz-feedback');
+            feedbackDiv.classList.remove('hidden');
+
+            if (optionData.isCorrect) {
+                btnElement.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+                feedbackDiv.className = "p-4 rounded-lg mb-6 font-medium text-lg border bg-green-50 border-green-200 text-green-900";
+                feedbackDiv.innerHTML = `<strong class="text-green-700 block mb-1">Correct!</strong> ${optionData.rationale}`;
+                quizScore++;
+            } else {
+                btnElement.classList.add('bg-red-100', 'border-red-500', 'text-red-800');
+                feedbackDiv.className = "p-4 rounded-lg mb-6 font-medium text-lg border bg-red-50 border-red-200 text-red-900";
+                feedbackDiv.innerHTML = `<strong class="text-red-700 block mb-1">Not quite.</strong> ${optionData.rationale}`;
+                
+                // Highlight correct answer
+                for (let b of allButtons) {
+                    const qDataOptions = quizData[currentQuizIndex].options;
+                    if(qDataOptions.find(o => o.text === b.innerHTML && o.isCorrect)) {
+                         b.classList.add('border-green-500', 'ring-2', 'ring-green-400');
+                    }
+                }
+            }
+
+            document.getElementById('quiz-next-btn').classList.remove('hidden');
+            
+            if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                MathJax.typesetPromise([feedbackDiv]).catch(err => console.log('MathJax error:', err));
+            }
+        }
+
+        function nextQuestion() {
+            currentQuizIndex++;
+            renderQuiz();
+        }
+
+        function showQuizResults() {
+            document.getElementById('quiz-content').classList.add('hidden');
+            document.getElementById('quiz-results').classList.remove('hidden');
+            document.getElementById('final-score').innerText = quizScore;
+        }
+
+        function restartQuiz() {
+            currentQuizIndex = 0;
+            quizScore = 0;
+            document.getElementById('quiz-content').classList.remove('hidden');
+            document.getElementById('quiz-results').classList.add('hidden');
+            renderQuiz();
+        }
+
+        // --- INIT ---
+        renderFlashcard();
+        renderQuiz();
+
+    </script>
+</body>
+</html>
+
+
