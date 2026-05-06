@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shortest Path & Intractability - Study Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f6; }
+        
+        /* Tab Styles */
+        .tab-btn.active {
+            border-bottom: 3px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Flashcard 3D Flip Styles */
+        .flip-card {
+            background-color: transparent;
+            perspective: 1000px;
+            height: 220px;
+            cursor: pointer;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 0.75rem;
+        }
+        .flip-card.active .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .flip-card-front {
+            background-color: #ffffff;
+            color: #1f2937;
+            border: 2px solid #e5e7eb;
+        }
+        .flip-card-back {
+            background-color: #1e3a8a;
+            color: #ffffff;
+            transform: rotateY(180deg);
+            border: 2px solid #1e3a8a;
+        }
+
+        /* Quiz Custom Styles */
+        .quiz-option {
+            transition: all 0.2s ease;
+        }
+        .quiz-option.selected-correct {
+            background-color: #d1fae5;
+            border-color: #10b981;
+        }
+        .quiz-option.selected-incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+        .quiz-option.unselected-correct {
+            background-color: #f0fdf4;
+            border-color: #10b981;
+            border-style: dashed;
+        }
+        .quiz-option.disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased">
+
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Algorithm & Complexity Study Module</h1>
+            <p class="text-gray-600">Master shortest paths, routing protocols, and computational intractability.</p>
+        </header>
+
+        <div class="flex justify-center border-b border-gray-300 mb-8">
+            <button onclick="switchTab('flashcards')" id="tab-btn-flashcards" class="tab-btn active px-6 py-3 text-gray-600 hover:text-blue-600 transition-colors focus:outline-none">
+                Flashcards (25)
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-btn-quiz" class="tab-btn px-6 py-3 text-gray-600 hover:text-blue-600 transition-colors focus:outline-none">
+                Knowledge Check (10)
+            </button>
+        </div>
+
+        <section id="flashcards" class="tab-content active">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold">Concept Flashcards</h2>
+                <button onclick="flipAll()" class="text-sm bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded transition-colors">Flip All</button>
+            </div>
+            <div id="flashcards-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                </div>
+        </section>
+
+        <section id="quiz" class="tab-content">
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold">Applied Knowledge Quiz</h2>
+                <p class="text-sm text-gray-500 mt-1">Select an answer to reveal the detailed rationale.</p>
+            </div>
+            <div id="quiz-container" class="space-y-8">
+                </div>
+        </section>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const flashcardsData = [
+            { front: "Single-Source Shortest Path problem", back: "Finding the cheapest route from one starting node to every other node in a weighted graph." },
+            { front: "Dijkstra's Algorithm strategy", back: "A greedy strategy that maintains tentative distances and always expands the closest unvisited node." },
+            { front: "Dijkstra's Algorithm critical limitation", back: "It breaks and fails to find the optimal path when negative edge weights are present." },
+            { front: "Dijkstra's Algorithm time complexity", back: "$O(E \\log V)$" },
+            { front: "Floyd-Warshall Algorithm target problem", back: "Finding the shortest path between every possible pair of nodes in a graph." },
+            { front: "Floyd-Warshall Algorithm strategy", back: "Dynamic programming, which considers each node as a possible intermediate stopover." },
+            { front: "Floyd-Warshall Algorithm time complexity", back: "$O(V^3)$" },
+            { front: "Distance-Vector protocols", back: "Routing protocols where routers periodically share their entire distance tables, but only with their direct neighbours." },
+            { front: "Distance-Vector protocol weaknesses", back: "Slow network convergence and vulnerability to 'count-to-infinity' loops when a link fails." },
+            { front: "Link-State protocols", back: "Routing protocols where routers flood their local link info to the entire network so everyone builds the exact same map." },
+            { front: "Link-State underlying algorithm", back: "Each router runs Dijkstra's algorithm locally on its complete network map to compute the best paths." },
+            { front: "Border Gateway Protocol (BGP)", back: "The policy-based routing protocol used to connect autonomous systems on the public internet." },
+            { front: "Tractable problem", back: "A computational problem that can be solved by an algorithm in reasonable time as the input grows." },
+            { front: "Intractable problem", back: "A computational problem where the runtime of every known algorithm explodes exponentially with the input size." },
+            { front: "Complexity Class P", back: "The class of problems that are solvable in a reasonable, polynomial amount of time." },
+            { front: "Complexity Class NP", back: "The class of problems whose solutions can be verified quickly, even if they take a long time to solve initially." },
+            { front: "NP-complete problems", back: "The hardest problems in NP; finding a fast algorithm for one would instantly provide a fast algorithm for all problems in NP." },
+            { front: "NP-hard problems", back: "Problems that are at least as hard as NP-complete problems, and their solutions may not even be verifiable quickly." },
+            { front: "Cook's Theorem (1971)", back: "The foundational theorem proving that the Boolean Satisfiability (SAT) problem is NP-complete." },
+            { front: "Travelling Salesman Problem (TSP)", back: "The challenge of finding the shortest possible route that visits a specific list of cities exactly once and returns to the origin." },
+            { front: "Approximation algorithms", back: "Algorithms that run in polynomial time and come with a proven mathematical bound on how far off their answer can be from the optimum." },
+            { front: "Christofides' algorithm bound", back: "An approximation algorithm that guarantees a metric TSP tour will be at most 1.5 times the optimal distance." },
+            { front: "Heuristic algorithms", back: "Fast algorithms that usually provide decent answers in practice but offer no mathematical guarantee of their worst-case quality." },
+            { front: "Nearest Neighbour heuristic", back: "A fast heuristic for TSP where the path is built by always moving from the current location to the closest unvisited city." },
+            { front: "P vs NP open question", back: "The famous unsolved computer science question of whether every problem whose solution can be checked quickly can also be solved quickly." }
+        ];
+
+        const quizData = [
+            {
+                question: "You are designing a routing algorithm for a financial network where some links represent a \"rebate\" or negative cost. Which algorithm should you explicitly avoid using for single-source shortest path calculations?",
+                hint: "Consider which algorithm assumes that moving further away always increases the total path cost.",
+                options: [
+                    { text: "Dijkstra's Algorithm", isCorrect: true, rationale: "The greedy strategy relies on the assumption that adding edges always increases total distance, causing the logic to fail and return incorrect paths when negative weights are introduced." },
+                    { text: "Floyd-Warshall Algorithm", isCorrect: false, rationale: "Dynamic programming evaluates all possible intermediate stopovers, allowing it to accurately process negative edge weights as long as there are no infinite negative cycles." },
+                    { text: "Christofides' algorithm", isCorrect: false, rationale: "This polynomial-time approximation is used to establish bounds for the Travelling Salesman Problem, rather than calculating exact shortest paths across a network." },
+                    { text: "Nearest Neighbour heuristic", isCorrect: false, rationale: "This fast, greedy method is utilized to find 'good enough' tours for the Travelling Salesman Problem and is not intended for exact network shortest-path calculations." }
+                ]
+            },
+            {
+                question: "You need to pre-compute the shortest paths between all servers in a small, highly interconnected enterprise network with 150 nodes. Which algorithm is best suited for this task and what is its time complexity?",
+                hint: "This scenario involves calculating all possible pairs on a dense graph rather than just routing from a single starting point.",
+                options: [
+                    { text: "Floyd-Warshall, $O(V^3)$", isCorrect: true, rationale: "The dynamic programming approach natively solves the all-pairs problem, making it ideal for pre-computing complete distance tables on small, dense graphs despite its cubic scaling." },
+                    { text: "Dijkstra's Algorithm, $O(E \\log V)$", isCorrect: false, rationale: "The greedy expansion method is highly efficient for single-source queries on large, sparse graphs like street maps, but it is not the primary tool for generating complete all-pairs tables." },
+                    { text: "Floyd-Warshall, $O(E \\log V)$", isCorrect: false, rationale: "The efficiency of edges times the logarithm of nodes belongs to the greedy single-source algorithm, whereas the all-pairs approach scales much more heavily." },
+                    { text: "Dijkstra's Algorithm, $O(V^3)$", isCorrect: false, rationale: "Running a single-source algorithm from every possible node is computationally expensive, but the cubic Big-O notation is specifically associated with the intermediate-stopover logic of the all-pairs algorithm." }
+                ]
+            },
+            {
+                question: "A major fibre cable is cut, and your enterprise network is experiencing slow convergence alongside \"count-to-infinity\" routing loops. Which type of routing protocol is likely running on your network?",
+                hint: "Think about the protocol that relies on \"gossip\" from direct neighbors rather than building a complete, definitive map of the topology.",
+                options: [
+                    { text: "Distance-Vector", isCorrect: true, rationale: "Protocols that share routing tables only with immediate neighbors are slow to propagate bad news through the network, leading to temporary loops when links fail." },
+                    { text: "Link-State", isCorrect: false, rationale: "By flooding link information so every node builds the exact same map, these protocols converge very quickly and remain loop-free by construction." },
+                    { text: "Path-Vector", isCorrect: false, rationale: "These policy-based protocols, operating on the public internet, attach full path histories to route advertisements specifically to prevent routing loops." },
+                    { text: "Open Shortest Path First (OSPF)", isCorrect: false, rationale: "This specific protocol relies on cartography and local shortest-path calculations to ensure rapid convergence and loop-free topology updates." }
+                ]
+            },
+            {
+                question: "An Internet Service Provider (ISP) wants to route traffic through a physically longer path because of a cheaper peering agreement with a partner network. Which protocol is designed to handle this business requirement?",
+                hint: "This scenario requires policy-based decisions across different autonomous systems rather than pure shortest-path mathematics.",
+                options: [
+                    { text: "Border Gateway Protocol (BGP)", isCorrect: true, rationale: "The standard protocol for the public internet prioritizes human-defined contracts and business policies over strict mathematical distance." },
+                    { text: "Open Shortest Path First (OSPF)", isCorrect: false, rationale: "This internal protocol strictly follows mathematical shortest paths based on link weights and does not natively support complex inter-organizational business policies." },
+                    { text: "Intermediate System to Intermediate System (IS-IS)", isCorrect: false, rationale: "While heavily used in large ISP backbones, this protocol focuses purely on efficient internal mathematical routing rather than external peering contracts." },
+                    { text: "Routing Information Protocol (RIP)", isCorrect: false, rationale: "This legacy protocol makes routing decisions based entirely on hop count, lacking the ability to evaluate financial costs or peering agreements." }
+                ]
+            },
+            {
+                question: "A colleague discovers a revolutionary algorithm that solves the Boolean Satisfiability (SAT) problem in polynomial time. According to Cook's Theorem, what is the immediate consequence of this discovery?",
+                hint: "SAT is a foundational problem; consider what solving it quickly implies for other problems within the exact same complexity class.",
+                options: [
+                    { text: "All NP problems can now be solved in polynomial time.", isCorrect: true, rationale: "Because SAT is NP-complete, finding a fast algorithm for it means every single problem whose solution can be verified quickly can now also be solved quickly." },
+                    { text: "Only NP-hard problems can now be solved in polynomial time.", isCorrect: false, rationale: "Problems classified beyond NP-complete are at least as hard as SAT, but some cannot even have their solutions verified quickly, meaning a fast SAT solver does not guarantee they become tractable." },
+                    { text: "The Traveling Salesman Problem becomes intractable.", isCorrect: false, rationale: "Since the decision version of this problem belongs to the NP class, discovering a polynomial algorithm for SAT would actually prove it is entirely tractable." },
+                    { text: "Shortest-path algorithms must be updated to handle the new complexity class.", isCorrect: false, rationale: "Standard routing algorithms already operate efficiently in polynomial time (Class P) and remain completely unaffected by breakthroughs in harder complexity classes." }
+                ]
+            },
+            {
+                question: "You are building a real-time dispatch system for a fleet of delivery vans that need to visit 200 addresses each day. The routes must be calculated in under two seconds, and a slightly suboptimal route is acceptable. Which approach should you use?",
+                hint: "The requirement prioritizes extreme speed and \"good enough\" results over mathematical bounds or guaranteed optimality.",
+                options: [
+                    { text: "A heuristic algorithm", isCorrect: true, rationale: "Methods like Nearest Neighbour execute extremely quickly in real-time environments, trading mathematical guarantees for rapid, decent solutions." },
+                    { text: "A brute force exact solver", isCorrect: false, rationale: "Checking every possible permutation for 200 locations would result in a combinatorial explosion, taking centuries to compute rather than seconds." },
+                    { text: "An approximation algorithm", isCorrect: false, rationale: "While providing a proven limit on how bad the route could be, establishing these strict mathematical bounds is often too computationally heavy for strict two-second real-time constraints." },
+                    { text: "The Floyd-Warshall algorithm", isCorrect: false, rationale: "This dynamic programming approach computes the distance between all individual stops but does not solve the sequencing problem of the best overall tour order." }
+                ]
+            },
+            {
+                question: "What is the primary difference between using an approximation algorithm and a heuristic algorithm for an NP-hard problem?",
+                hint: "Think about what the engineer can definitively promise the client about the worst-case scenario.",
+                options: [
+                    { text: "Approximations provide a proven mathematical bound on the answer, while heuristics offer no worst-case guarantees.", isCorrect: true, rationale: "Approximations guarantee the result will never be worse than a specific multiple of the optimal answer, whereas heuristics rely on practical speed without safety nets." },
+                    { text: "Approximations always find the optimal answer in polynomial time, while heuristics only find it in exponential time.", isCorrect: false, rationale: "Both methods exist specifically because finding the absolute optimal answer takes too much time; they both trade perfection for computational speed." },
+                    { text: "Heuristics are only used for graphs with negative weights, while approximations are used for standard routing.", isCorrect: false, rationale: "Both are strategies for dealing with intractable scaling problems like the Travelling Salesman, completely unrelated to how negative edge weights are handled." },
+                    { text: "Heuristics provide a proven mathematical bound, while approximations are based on fast, educated guesses.", isCorrect: false, rationale: "The terminology is reversed; it is the approximations that bring rigorous mathematical promises, while heuristics act as the fast, educated guesses." }
+                ]
+            },
+            {
+                question: "A new scheduling algorithm is proposed for university exams. Testing shows that adding just one more student to the schedule doubles the total computing time required. How would a computer scientist classify this problem?",
+                hint: "Notice the pattern of growth: a fixed increase in the input size leads to a multiplicative increase in the required processing time.",
+                options: [
+                    { text: "It is an intractable problem experiencing exponential growth.", isCorrect: true, rationale: "When a single unit of input causes the runtime to multiply by a factor, the algorithm quickly hits the \"wall\" where even infinite hardware cannot brute-force the solution." },
+                    { text: "It is a tractable problem with polynomial time complexity.", isCorrect: false, rationale: "Polynomial scaling is much gentler and manageable; doubling the workload with every single addition is the defining characteristic of severe non-polynomial scaling." },
+                    { text: "It belongs to the complexity class P.", isCorrect: false, rationale: "Problems in this class are solvable in reasonable time frames and do not exhibit extreme workload multiplication when small amounts of data are added." },
+                    { text: "It is a greedy algorithm problem.", isCorrect: false, rationale: "Greedy strategies typically result in fast, polynomial-time execution, whereas this scaling behavior indicates a fundamentally harder structural problem." }
+                ]
+            },
+            {
+                question: "In an OSPF network, a router receives new flooded link information from a neighbor. What is the very next step it takes to ensure it has the correct routing table?",
+                hint: "Consider the \"cartography\" metaphor; what does each node do locally once it has received pieces of the complete map?",
+                options: [
+                    { text: "It runs Dijkstra's algorithm locally on its updated map.", isCorrect: true, rationale: "Once the flooded information is used to update the shared topology map, the router recalculates its own specific shortest paths to all other destinations." },
+                    { text: "It requests the full distance vector from the central gateway.", isCorrect: false, rationale: "This protocol relies on assembling independent pieces of flooded link states, not on asking neighbors or centralized servers for pre-computed full distance tables." },
+                    { text: "It immediately switches to a policy-based protocol to verify the path.", isCorrect: false, rationale: "Internal enterprise routing protocols rely purely on math and do not utilize external policy-based protocols for verifying internal shortest paths." },
+                    { text: "It forwards the packet to the nearest unvisited node.", isCorrect: false, rationale: "Choosing the closest unvisited node is a heuristic for the Travelling Salesman Problem, not the mechanism by which network routers build their forwarding tables." }
+                ]
+            },
+            {
+                question: "A developer builds a Sudoku solver. The solver takes an extremely long time to generate the answer for a large grid, but a separate function can instantly verify if the generated answer follows all the rules. Which complexity class best describes the nature of verifying this Sudoku board?",
+                hint: "Focus specifically on the characteristic of the solution being checkable or verifiable in a reasonable amount of time, regardless of how long it took to generate.",
+                options: [
+                    { text: "NP (Nondeterministic Polynomial)", isCorrect: true, rationale: "This class defines problems where, even if finding the solution requires exponential time, checking a proposed solution's validity can be done quickly in polynomial time." },
+                    { text: "P (Polynomial)", isCorrect: false, rationale: "This classification is reserved for problems where the act of finding the solution from scratch can be accomplished in a reasonable time frame." },
+                    { text: "NP-hard", isCorrect: false, rationale: "This label designates problems that are at least as difficult as the hardest problems in NP, and some of them may not even allow for quick verification." },
+                    { text: "NP-complete", isCorrect: false, rationale: "While the overall act of solving generalized Sudoku belongs here, the specific property of quick verification is the defining hallmark of the broader overarching class." }
+                ]
+            }
+        ];
+
+        // --- APP LOGIC ---
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById(`tab-btn-${tabId}`).classList.add('active');
+        }
+
+        function renderFlashcards() {
+            const container = document.getElementById('flashcards-container');
+            container.innerHTML = flashcardsData.map((card, index) => `
+                <div class="flip-card" onclick="this.classList.toggle('active')">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front shadow-sm">
+                            <span class="text-lg font-semibold text-center">${card.front}</span>
+                        </div>
+                        <div class="flip-card-back shadow-sm p-4">
+                            <span class="text-sm font-medium text-center leading-relaxed">${card.back}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function flipAll() {
+            const cards = document.querySelectorAll('.flip-card');
+            const allFlipped = Array.from(cards).every(card => card.classList.contains('active'));
+            cards.forEach(card => {
+                if (allFlipped) {
+                    card.classList.remove('active');
+                } else {
+                    card.classList.add('active');
+                }
+            });
+        }
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = quizData.map((q, qIndex) => `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex gap-4">
+                        <div class="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
+                            ${qIndex + 1}
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">${q.question}</h3>
+                            <button onclick="toggleHint(${qIndex})" class="text-sm text-blue-600 hover:text-blue-800 mb-4 focus:outline-none flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Show Hint
+                            </button>
+                            <div id="hint-${qIndex}" class="hidden bg-blue-50 text-blue-800 p-3 rounded-md text-sm mb-4 border border-blue-100">
+                                <strong>Hint:</strong> ${q.hint}
+                            </div>
+                            
+                            <div class="space-y-3" id="options-${qIndex}">
+                                ${q.options.map((opt, oIndex) => `
+                                    <label class="quiz-option cursor-pointer flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50" id="label-${qIndex}-${oIndex}">
+                                        <input type="radio" name="q${qIndex}" class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer" onclick="selectAnswer(${qIndex}, ${oIndex}, ${opt.isCorrect})">
+                                        <span class="ml-3 block text-gray-700">${opt.text}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+
+                            <div id="feedback-${qIndex}" class="hidden mt-4 p-4 rounded-lg text-sm">
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleHint(qIndex) {
+            const hintEl = document.getElementById(`hint-${qIndex}`);
+            hintEl.classList.toggle('hidden');
+        }
+
+        function selectAnswer(qIndex, selectedOIndex, isCorrect) {
+            const optionsContainer = document.getElementById(`options-${qIndex}`);
+            const labels = optionsContainer.querySelectorAll('label');
+            const inputs = optionsContainer.querySelectorAll('input');
+            const feedbackEl = document.getElementById(`feedback-${qIndex}`);
+            const questionData = quizData[qIndex];
+
+            // Disable all inputs for this question
+            inputs.forEach(input => input.disabled = true);
+            labels.forEach(label => label.classList.add('disabled'));
+
+            // Reset label styles first
+            labels.forEach(label => {
+                label.classList.remove('selected-correct', 'selected-incorrect', 'unselected-correct', 'hover:bg-gray-50');
+            });
+
+            // Apply styles based on correctness
+            labels.forEach((label, oIndex) => {
+                const opt = questionData.options[oIndex];
+                if (oIndex === selectedOIndex) {
+                    if (isCorrect) {
+                        label.classList.add('selected-correct');
+                    } else {
+                        label.classList.add('selected-incorrect');
+                    }
+                } else if (opt.isCorrect) {
+                    // Highlight the correct answer if they missed it
+                    label.classList.add('unselected-correct');
+                }
+            });
+
+            // Show feedback rationale
+            const selectedOpt = questionData.options[selectedOIndex];
+            feedbackEl.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'border-green-200', 'bg-red-50', 'text-red-800', 'border-red-200');
+            
+            if (isCorrect) {
+                feedbackEl.classList.add('bg-green-50', 'text-green-800', 'border', 'border-green-200');
+                feedbackEl.innerHTML = `<strong class="text-green-700 block mb-1">✓ Correct Analysis:</strong> ${selectedOpt.rationale}`;
+            } else {
+                feedbackEl.classList.add('bg-red-50', 'text-red-800', 'border', 'border-red-200');
+                feedbackEl.innerHTML = `<strong class="text-red-700 block mb-1">✗ Concept Error:</strong> ${selectedOpt.rationale}`;
+            }
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', () => {
+            renderFlashcards();
+            renderQuiz();
+            // Tell MathJax to parse the dynamically injected content safely
+            if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise === 'function') {
+                MathJax.typesetPromise().catch((err) => console.log('MathJax error: ', err.message));
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
